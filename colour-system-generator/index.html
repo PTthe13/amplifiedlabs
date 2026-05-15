@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Colour System Generator — Amplified Labs</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --brand:#f16622;
+    --ink:#191512;
+    --paper:#f6f1e8;
+    --dim:#8a7d6a;
+    --line:rgba(25,21,18,.1);
+  }
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:48px 28px 96px}
+  h1{font-size:clamp(28px,4vw,42px);line-height:1.05;letter-spacing:-.02em;margin:0 0 8px;font-weight:800}
+  h1 em{font-style:italic;color:var(--brand);font-family:"Instrument Serif",ui-serif,Georgia,serif;font-weight:400}
+  .sub{color:var(--dim);max-width:60ch;margin:0 0 32px;font-size:15px}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;padding:18px;background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:28px}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-bottom:6px;font-weight:600}
+  input[type="text"],input[type="number"]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:14px;background:#fff;color:var(--ink)}
+  input[type="color"]{width:100%;height:40px;border:1px solid var(--line);border-radius:8px;padding:2px;background:#fff;cursor:pointer}
+  input:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:transparent}
+  .scale{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;margin:24px 0;border-radius:12px;overflow:hidden}
+  .sw{aspect-ratio:1/1.4;display:flex;flex-direction:column;justify-content:space-between;padding:10px;font-size:10px;font-family:ui-monospace,"JetBrains Mono",monospace;letter-spacing:.04em;cursor:pointer;transition:transform .15s}
+  .sw:hover{transform:translateY(-3px)}
+  .sw .step{font-weight:700;font-size:13px}
+  .sw .hex{opacity:.7}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:36px}
+  @media (max-width:760px){.row{grid-template-columns:1fr}.scale{grid-template-columns:repeat(6,1fr)}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}
+  .card h3{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+  .copy{font-size:11px;background:var(--ink);color:var(--paper);border:0;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:ui-monospace,monospace;letter-spacing:.05em}
+  .copy:hover{background:var(--brand)}
+  .copy.ok{background:#22b07d}
+  pre{background:#1a1612;color:#f6f1e8;border-radius:10px;padding:14px 16px;margin:0;font-family:ui-monospace,"JetBrains Mono",monospace;font-size:12px;line-height:1.55;overflow-x:auto;max-height:340px}
+  .semantic{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+  .sem-sw{aspect-ratio:1;border-radius:10px;display:flex;align-items:flex-end;padding:8px;font-size:10px;font-family:ui-monospace,monospace;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  footer a{color:var(--brand);text-decoration:none}
+  .preview{padding:32px;border-radius:14px;border:1px solid var(--line);margin-top:24px;transition:background .3s,color .3s}
+  .preview.dark{background:#0e0a08;color:#f6f1e8;border-color:rgba(255,255,255,.1)}
+  .preview h4{margin:0 0 10px;font-size:24px;font-weight:800}
+  .preview .btn{display:inline-block;padding:10px 18px;border-radius:8px;font-weight:600;font-size:14px;margin-top:14px;border:0;cursor:pointer;color:#fff}
+  .toggle{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--ink);color:var(--paper);border-radius:20px;cursor:pointer;font-size:12px;border:0;font-family:inherit}
+  .pill{display:inline-block;padding:3px 9px;background:rgba(241,102,34,.1);color:var(--brand);border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.05em;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Colour system <em>generator.</em></h1>
+  <p class="sub">Drop in a brand hex. Get an 11-step scale, semantic tokens, dark-mode pairing, CSS custom properties, Tailwind config and Figma tokens — all derived from one colour. <a href="https://github.com/PTthe13/amplifiedlabs/tree/main/colour-system-generator" style="color:var(--brand)">Open on GitHub →</a></p>
+
+  <div class="controls">
+    <div>
+      <label>Brand colour</label>
+      <input type="color" id="hex" value="#f16622">
+    </div>
+    <div>
+      <label>Hex value</label>
+      <input type="text" id="hexText" value="#f16622">
+    </div>
+    <div>
+      <label>Name (CSS var prefix)</label>
+      <input type="text" id="name" value="brand">
+    </div>
+    <div>
+      <label>Hue spread (semantic)</label>
+      <input type="number" id="spread" value="120" min="20" max="180" step="10">
+    </div>
+  </div>
+
+  <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:24px 0 8px">Primary scale <span class="pill">11 STEPS</span></h3>
+  <div class="scale" id="scale"></div>
+
+  <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:24px 0 8px">Semantic tokens <span class="pill">DERIVED</span></h3>
+  <div class="semantic" id="semantic"></div>
+
+  <div class="preview" id="preview">
+    <button class="toggle" id="darkToggle">◐ Toggle dark mode</button>
+    <h4 style="margin-top:14px">The quick brown fox jumps over the lazy dog.</h4>
+    <p style="opacity:.7;font-size:14px">Live preview using <code>--<span id="prevName">brand</span>-500</code> for accents and <code>--<span id="prevName2">brand</span>-50</code> / <code>-950</code> for surfaces.</p>
+    <button class="btn" id="btnPreview">Primary action</button>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h3>CSS custom properties <button class="copy" data-target="css">Copy</button></h3>
+      <pre id="css"></pre>
+    </div>
+    <div class="card">
+      <h3>Tailwind config <button class="copy" data-target="tw">Copy</button></h3>
+      <pre id="tw"></pre>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h3>SCSS variables <button class="copy" data-target="scss">Copy</button></h3>
+      <pre id="scss"></pre>
+    </div>
+    <div class="card">
+      <h3>Figma Tokens Studio JSON <button class="copy" data-target="figma">Copy</button></h3>
+      <pre id="figma"></pre>
+    </div>
+  </div>
+
+  <footer>
+    <span>Made by <a href="https://amplifiedcreations.com">Amplified Creations</a> · MIT licensed</span>
+    <span><a href="https://github.com/PTthe13/amplifiedlabs">github.com/PTthe13/amplifiedlabs</a></span>
+  </footer>
+</div>
+
+<script>
+// ============================================================================
+// HSL conversions
+// ============================================================================
+function hexToHsl(hex){
+  const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  let h,s,l=(max+min)/2;
+  if(max===min){h=s=0;}else{
+    const d=max-min;
+    s=l>.5?d/(2-max-min):d/(max+min);
+    switch(max){
+      case r:h=(g-b)/d+(g<b?6:0);break;
+      case g:h=(b-r)/d+2;break;
+      case b:h=(r-g)/d+4;break;
+    }
+    h*=60;
+  }
+  return [h,s*100,l*100];
+}
+function hslToHex(h,s,l){
+  s/=100;l/=100;
+  const k=n=>(n+h/30)%12;
+  const a=s*Math.min(l,1-l);
+  const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
+  const t=x=>Math.round(x*255).toString(16).padStart(2,'0');
+  return `#${t(f(0))}${t(f(8))}${t(f(4))}`;
+}
+
+// ============================================================================
+// Build 11-step scale (50, 100, ..., 950) using lightness lerp + slight chroma decay
+// ============================================================================
+const STEPS=[50,100,200,300,400,500,600,700,800,900,950];
+// Target lightnesses tuned for visual evenness
+const L_TARGETS=[97,93,86,76,64,50,42,34,26,17,10];
+
+function buildScale(hex){
+  const [h,s,l]=hexToHsl(hex);
+  // Step 500 is "your" colour. Other steps interpolate around it.
+  return STEPS.map((step,i)=>{
+    const targetL=L_TARGETS[i];
+    // Saturation: highest near the base, slightly dampened at the extremes
+    const sat = i===5 ? s : Math.max(15, s * (1 - Math.abs(i-5)*0.06));
+    return { step, hex: hslToHex(h, sat, targetL), l: targetL };
+  });
+}
+
+function buildSemantic(brandHex, spread){
+  const [h,s,l]=hexToHsl(brandHex);
+  return {
+    success: hslToHex((h+spread)%360, Math.max(45,s*0.7), 45),
+    warning: hslToHex((h+45)%360, Math.max(70,s), 52),
+    danger:  hslToHex((h+180)%360 % 360, Math.max(60,s*0.8), 50),
+    info:    hslToHex((h+spread*2)%360, Math.max(55,s*0.7), 52),
+  };
+}
+
+// ============================================================================
+// Renderers
+// ============================================================================
+function render(){
+  const hex = document.getElementById('hexText').value.trim();
+  if(!/^#[0-9a-f]{6}$/i.test(hex)) return;
+  const name = (document.getElementById('name').value || 'brand').replace(/[^a-z0-9-]/gi,'').toLowerCase() || 'brand';
+  const spread = parseInt(document.getElementById('spread').value)||120;
+
+  const scale = buildScale(hex);
+  const semantic = buildSemantic(hex, spread);
+
+  // Scale swatches
+  const scaleEl = document.getElementById('scale');
+  scaleEl.innerHTML = scale.map(s=>{
+    const fg = s.l > 55 ? '#191512' : '#f6f1e8';
+    return `<div class="sw" style="background:${s.hex};color:${fg}" onclick="copy('${s.hex}')">
+      <span class="step">${s.step}</span>
+      <span class="hex">${s.hex}</span>
+    </div>`;
+  }).join('');
+
+  // Semantic swatches
+  const semEl = document.getElementById('semantic');
+  semEl.innerHTML = Object.entries(semantic).map(([k,v])=>{
+    return `<div class="sem-sw" style="background:${v}" onclick="copy('${v}')">
+      <span>${k}<br>${v}</span>
+    </div>`;
+  }).join('');
+
+  // Live preview
+  document.getElementById('prevName').textContent = name;
+  document.getElementById('prevName2').textContent = name;
+  const isDark = document.getElementById('preview').classList.contains('dark');
+  document.getElementById('preview').style.background = isDark ? scale[10].hex : scale[0].hex;
+  document.getElementById('preview').style.color = isDark ? scale[0].hex : scale[10].hex;
+  document.getElementById('btnPreview').style.background = scale[5].hex;
+  document.getElementById('btnPreview').style.color = scale[5].l > 55 ? scale[10].hex : scale[0].hex;
+
+  // CSS custom properties
+  const cssLines = [
+    ':root {',
+    ...scale.map(s=>`  --${name}-${s.step}: ${s.hex};`),
+    '',
+    `  --${name}-success: ${semantic.success};`,
+    `  --${name}-warning: ${semantic.warning};`,
+    `  --${name}-danger:  ${semantic.danger};`,
+    `  --${name}-info:    ${semantic.info};`,
+    '}',
+    '',
+    '@media (prefers-color-scheme: dark) {',
+    '  :root {',
+    `    --${name}-bg:      var(--${name}-950);`,
+    `    --${name}-fg:      var(--${name}-50);`,
+    `    --${name}-surface: var(--${name}-900);`,
+    `    --${name}-accent:  var(--${name}-400);`,
+    '  }',
+    '}',
+    '',
+    '@media (prefers-color-scheme: light) {',
+    '  :root {',
+    `    --${name}-bg:      var(--${name}-50);`,
+    `    --${name}-fg:      var(--${name}-950);`,
+    `    --${name}-surface: var(--${name}-100);`,
+    `    --${name}-accent:  var(--${name}-500);`,
+    '  }',
+    '}',
+  ];
+  document.getElementById('css').textContent = cssLines.join('\n');
+
+  // Tailwind config
+  const twLines = [
+    '// tailwind.config.js',
+    'module.exports = {',
+    '  theme: {',
+    '    extend: {',
+    '      colors: {',
+    `        ${name}: {`,
+    ...scale.map(s=>`          ${s.step}: '${s.hex}',`),
+    '        },',
+    `        success: '${semantic.success}',`,
+    `        warning: '${semantic.warning}',`,
+    `        danger:  '${semantic.danger}',`,
+    `        info:    '${semantic.info}',`,
+    '      },',
+    '    },',
+    '  },',
+    '};',
+  ];
+  document.getElementById('tw').textContent = twLines.join('\n');
+
+  // SCSS
+  const scssLines = [
+    ...scale.map(s=>`$${name}-${s.step}: ${s.hex};`),
+    '',
+    `$${name}-success: ${semantic.success};`,
+    `$${name}-warning: ${semantic.warning};`,
+    `$${name}-danger:  ${semantic.danger};`,
+    `$${name}-info:    ${semantic.info};`,
+    '',
+    `$${name}-scale: (`,
+    ...scale.map(s=>`  '${s.step}': $${name}-${s.step},`),
+    ');',
+  ];
+  document.getElementById('scss').textContent = scssLines.join('\n');
+
+  // Figma Tokens Studio JSON
+  const figma = {
+    [name]: Object.fromEntries(scale.map(s=>[String(s.step),{value:s.hex,type:'color'}])),
+    semantic: {
+      success:{value:semantic.success,type:'color'},
+      warning:{value:semantic.warning,type:'color'},
+      danger: {value:semantic.danger, type:'color'},
+      info:   {value:semantic.info,   type:'color'},
+    }
+  };
+  document.getElementById('figma').textContent = JSON.stringify(figma,null,2);
+}
+
+// ============================================================================
+// Wiring
+// ============================================================================
+function copy(text){
+  navigator.clipboard.writeText(text);
+}
+document.querySelectorAll('.copy').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const target = document.getElementById(btn.dataset.target);
+    navigator.clipboard.writeText(target.textContent);
+    btn.classList.add('ok');
+    const old = btn.textContent; btn.textContent='Copied';
+    setTimeout(()=>{btn.classList.remove('ok');btn.textContent=old;},1200);
+  });
+});
+
+document.getElementById('hex').addEventListener('input',e=>{
+  document.getElementById('hexText').value=e.target.value;
+  render();
+});
+document.getElementById('hexText').addEventListener('input',e=>{
+  let v=e.target.value.trim();
+  if(!v.startsWith('#'))v='#'+v;
+  if(/^#[0-9a-f]{6}$/i.test(v))document.getElementById('hex').value=v;
+  render();
+});
+document.getElementById('name').addEventListener('input',render);
+document.getElementById('spread').addEventListener('input',render);
+document.getElementById('darkToggle').addEventListener('click',()=>{
+  document.getElementById('preview').classList.toggle('dark');
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

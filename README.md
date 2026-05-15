@@ -14,6 +14,8 @@ Each folder is a self-contained piece — generative art, shaders, utility scrip
 | [`generative-svg-covers`](./generative-svg-covers) | Server-side generative SVG cover images. Deterministic geometry from a slug + crc32. No designer, no upload, no asset pipeline. | PHP · SVG · crc32 · Cache-Control |
 | [`static-php-i18n-ovh`](./static-php-i18n-ovh) | An i18n stack that works on cheap shared hosting where mod_rewrite QSA breaks: URL path parsing in PHP + a JS link-rewriter at boot. No frameworks, no build step. | PHP · JavaScript · Apache · Cockpit CMS |
 | [`canvas-demos`](./canvas-demos) | Inline canvas generative pieces: orbital trace, flow field, Truchet tiles. Pure browser, no framework. | Canvas 2D · requestAnimationFrame · JavaScript |
+| [`colour-system-generator`](./colour-system-generator) | Single brand hex → 11-step scale, semantic tokens, dark-mode pairing, CSS / Tailwind / SCSS / Figma Tokens output. | HTML · JS · HSL |
+| [`responsive-type-scale`](./responsive-type-scale) | Fluid modular type scale using CSS `clamp()`. Pick base + ratio, get h1–h6 + body ladder. | HTML · CSS · clamp() |
 
 ## Running
 
