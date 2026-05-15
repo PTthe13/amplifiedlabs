@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Canvas demos — Amplified Labs</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body { margin: 0; padding: 32px; background: #0e0a08; color: #f6f1e8; font-family: ui-monospace, "JetBrains Mono", monospace; }
+  h1 { font-size: 14px; letter-spacing: .1em; color: #f16622; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; }
+  .demo { border: 1px solid #2a221c; border-radius: 12px; padding: 16px; }
+  .demo h2 { font-size: 12px; letter-spacing: .1em; margin: 0 0 6px; color: #8a7d6a; }
+  .demo p { font-size: 13px; margin: 0 0 14px; color: #c4baa9; line-height: 1.5; }
+  canvas { width: 100%; aspect-ratio: 1; display: block; background: #0e0a08; border-radius: 8px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>— CANVAS DEMOS</h1>
+<div class="grid">
+  <div class="demo">
+    <h2>— DEMO 01 — ORBITAL TRACE</h2>
+    <p>80 dots on a hue-cycling ring. Pure canvas, ~30 lines.</p>
+    <canvas data-demo="orbital" width="600" height="600"></canvas>
+  </div>
+  <div class="demo">
+    <h2>— DEMO 02 — FLOW FIELD</h2>
+    <p>Particles drift through a Perlin-like vector field. Restart on click.</p>
+    <canvas data-demo="flow" width="600" height="600"></canvas>
+  </div>
+  <div class="demo">
+    <h2>— DEMO 03 — TRUCHET TILES</h2>
+    <p>Random arc-tiles compose into endless looping textures. Click to redraw.</p>
+    <canvas data-demo="truchet" width="600" height="600"></canvas>
+  </div>
+</div>
+
+<script>
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.querySelectorAll('canvas').forEach(canvas => {
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  function size() {
+    const r = canvas.getBoundingClientRect();
+    canvas.width = r.width * dpr; canvas.height = r.height * dpr;
+    ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr, dpr);
+  }
+  size(); addEventListener('resize', size);
+  const which = canvas.dataset.demo;
+  ctx.fillStyle = '#0e0a08'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const start = performance.now();
+  let raf = 0;
+  let particles = [];
+  function init() {
+    if (which === 'flow') {
+      particles = Array.from({ length: 280 }, () => ({
+        x: Math.random() * canvas.clientWidth,
+        y: Math.random() * canvas.clientHeight,
+        age: Math.random() * 200,
+      }));
+    }
+  }
+  init();
+  canvas.addEventListener('click', () => {
+    ctx.fillStyle = '#0e0a08'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (which === 'truchet') canvas._drawn = false;
+    init();
+    if (!raf) raf = requestAnimationFrame(draw);
+  });
+  function draw(now) {
+    const t = now - start;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (which === 'orbital') {
+      ctx.fillStyle = 'rgba(14,10,8,.06)'; ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 80; i++) {
+        const a = (i / 80) * Math.PI * 2;
+        const r = 120 + Math.sin(t / 800 + i) * 80;
+        const x = w/2 + Math.cos(a + t/2200) * r;
+        const y = h/2 + Math.sin(a + t/2200) * r;
+        ctx.fillStyle = `hsl(${22 + Math.sin(t/3000)*10}, ${50 + i*0.5}%, ${55 - i*0.3}%)`;
+        ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI*2); ctx.fill();
+      }
+    }
+    if (which === 'flow') {
+      ctx.fillStyle = 'rgba(14,10,8,.02)'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(241,102,34,.4)';
+      particles.forEach(p => {
+        const ang = (Math.sin(p.x * 0.005) + Math.cos(p.y * 0.005)) * Math.PI;
+        p.x += Math.cos(ang) * 1.2; p.y += Math.sin(ang) * 1.2; p.age++;
+        if (p.x < 0 || p.x > w || p.y < 0 || p.y > h || p.age > 240) {
+          p.x = Math.random() * w; p.y = Math.random() * h; p.age = 0;
+        }
+        ctx.fillRect(p.x, p.y, 1.2, 1.2);
+      });
+    }
+    if (which === 'truchet') {
+      if (!canvas._drawn) {
+        ctx.fillStyle = '#0e0a08'; ctx.fillRect(0, 0, w, h);
+        const cell = 32;
+        ctx.strokeStyle = '#f16622'; ctx.lineWidth = 2;
+        for (let y = 0; y < h; y += cell) {
+          for (let x = 0; x < w; x += cell) {
+            ctx.beginPath();
+            if (Math.random() < 0.5) {
+              ctx.arc(x, y, cell/2, 0, Math.PI/2);
+              ctx.moveTo(x + cell, y + cell);
+              ctx.arc(x + cell, y + cell, cell/2, Math.PI, Math.PI * 1.5);
+            } else {
+              ctx.arc(x + cell, y, cell/2, Math.PI/2, Math.PI);
+              ctx.moveTo(x, y + cell);
+              ctx.arc(x, y + cell, cell/2, Math.PI * 1.5, Math.PI * 2);
+            }
+            ctx.stroke();
+          }
+        }
+        canvas._drawn = true;
+      }
+    }
+    if (!reduce && which !== 'truchet') raf = requestAnimationFrame(draw);
+    else raf = 0;
+  }
+  if (which === 'truchet') raf = requestAnimationFrame(draw);
+  else raf = requestAnimationFrame(draw);
+});
+</script>
+</body>
+</html>
