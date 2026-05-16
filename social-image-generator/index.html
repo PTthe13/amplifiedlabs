@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Lugares & Laços — Estúdio de Imagens</title>
+<title>Travel Studio — Image Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,wght@1,300;1,400&display=swap" rel="stylesheet" />
@@ -232,7 +232,7 @@ const TYPE = {
 const mono = `'Geist Mono', ui-monospace, monospace`;
 const sans = `'Geist', system-ui, sans-serif`;
 
-function BrandMark({ d, color='inherit', size=1, dark=false, name='Lugares & Laços' }) {
+function BrandMark({ d, color='inherit', size=1, dark=false, name='Travel Studio' }) {
   const ink = dark ? '#fff' : color;
   return (
     <div style={{
@@ -695,7 +695,7 @@ const LAYOUTS = [
 const { useState, useEffect, useRef } = React;
 
 const DEFAULTS = {
-  business: 'Lugares & Laços',
+  business: 'Travel Studio',
   destination: 'Sifnos, Grécia',
   headline: 'Uma semana longa e tranquila nas Cíclades',
   price: '€2.180',
@@ -899,7 +899,7 @@ function App() {
       const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const fn = `LugaresLacos_${(data.destination||'post').replace(/[^a-z0-9]/gi,'_')}_${format==='square'?'1x1':'9x16'}.png`;
+      const fn = `TravelStudio_${(data.destination||'post').replace(/[^a-z0-9]/gi,'_')}_${format==='square'?'1x1':'9x16'}.png`;
       a.href = url; a.download = fn;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(url), 1000);
@@ -944,8 +944,8 @@ function App() {
         <div className="brand-row">
           <span className="brand-dot"/>
           <div>
-            <div className="brand-name">Lugares &amp; Laços</div>
-            <div className="brand-sub">Estúdio de Imagens · 1:1 + 9:16</div>
+            <div className="brand-name">Travel Studio</div>
+            <div className="brand-sub">Image Studio · 1:1 + 9:16</div>
           </div>
         </div>
         <div className="head-right">
@@ -1011,7 +1011,7 @@ function App() {
 
             <Field label="Nome da empresa">
               <TextInput value={data.business} onChange={v=>set('business',v)}
-                placeholder="Lugares & Laços"/>
+                placeholder="Travel Studio"/>
             </Field>
             <Field label="Destino">
               <TextInput value={data.destination} onChange={v=>set('destination',v)}
