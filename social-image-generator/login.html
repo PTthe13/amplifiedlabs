@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Lugares & Laços — Acesso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:#FAFAF7;font-family:'Geist',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .card{
+    width:100%;max-width:360px;padding:48px 40px;
+    background:#fff;border:1px solid #ECEAE3;border-radius:12px;
+    box-shadow:0 8px 40px -16px rgba(0,0,0,.12);
+    display:flex;flex-direction:column;align-items:center;gap:32px;
+  }
+  .logo{display:flex;align-items:center;gap:10px}
+  .dot{width:10px;height:10px;border-radius:50%;
+    background:conic-gradient(from 0deg,#C5532B,#1B4D3E,#E8A02A,#C5532B)}
+  .brand{font-size:16px;font-weight:600;letter-spacing:-.01em;color:#0F0F0E}
+  .sub{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:#7A7A75;text-align:center}
+  form{width:100%;display:flex;flex-direction:column;gap:14px}
+  label{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:#7A7A75;display:block;margin-bottom:6px}
+  input{
+    width:100%;padding:12px 14px;border:1px solid #ECEAE3;border-radius:7px;
+    font:500 18px/1 'Geist Mono',monospace;color:#0F0F0E;letter-spacing:.18em;
+    text-align:center;text-transform:uppercase;outline:none;
+    transition:border-color .15s,box-shadow .15s;background:#fff;
+  }
+  input::placeholder{color:#A8A8A3;letter-spacing:.08em;font-size:13px;font-family:'Geist',sans-serif;text-transform:none}
+  input:focus{border-color:#0F0F0E;box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+  input.err{border-color:#C5532B;box-shadow:0 0 0 3px rgba(197,83,43,.08)}
+  .err-msg{font-size:12.5px;color:#C5532B;text-align:center;height:18px}
+  button{
+    width:100%;padding:14px;background:#0F0F0E;color:#fff;border:0;
+    border-radius:999px;font:500 14px/1 'Geist',sans-serif;cursor:pointer;
+    transition:transform .15s,background .15s;
+  }
+  button:hover{background:#000;transform:translateY(-1px)}
+  button:active{transform:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <span class="dot"></span>
+    <span class="brand">Lugares &amp; Laços</span>
+  </div>
+  <div class="sub">Estúdio de Imagens<br/>Introduza o código de acesso</div>
+  <form id="f">
+    <div>
+      <label for="code">Código</label>
+      <input id="code" type="password" placeholder="••••••••" autocomplete="off" autocorrect="off" spellcheck="false"/>
+    </div>
+    <div class="err-msg" id="err"></div>
+    <button type="submit">Entrar →</button>
+  </form>
+</div>
+<script>
+  /* Access code — change this to whatever you want */
+  const ACCESS_CODE = 'CHANGE_ME';
+  const COOKIE_NAME = 'llauth';
+  const COOKIE_DAYS = 30;
+
+  /* If already authenticated, go straight to app */
+  if (document.cookie.split(';').some(c => c.trim().startsWith(COOKIE_NAME + '='))) {
+    window.location.replace('/');
+  }
+
+  document.getElementById('f').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('code');
+    const err   = document.getElementById('err');
+    if (input.value.trim().toUpperCase() === ACCESS_CODE) {
+      const exp = new Date(Date.now() + COOKIE_DAYS * 864e5).toUTCString();
+      document.cookie = COOKIE_NAME + '=1; expires=' + exp + '; path=/; SameSite=Lax';
+      window.location.replace('/');
+    } else {
+      input.classList.add('err');
+      err.textContent = 'Código incorreto. Tente novamente.';
+      input.value = '';
+      setTimeout(() => { input.classList.remove('err'); err.textContent = ''; }, 2500);
+    }
+  });
+</script>
+</body>
+</html>

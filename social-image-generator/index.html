@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Lugares & Laços — Estúdio de Imagens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,wght@1,300;1,400&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --bg:#FAFAF7;
+    --pane:#FFFFFF;
+    --ink:#0F0F0E;
+    --ink-2:#2A2A27;
+    --muted:#7A7A75;
+    --muted-2:#A8A8A3;
+    --line:#ECEAE3;
+    --line-2:#DDD9CE;
+    --accent:#1A1A18;
+    --warm:#C5532B;
+    --crisp:#1B4D3E;
+    --bento:#E8A02A;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:'Geist',-apple-system,system-ui,sans-serif;
+    font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased;
+    font-feature-settings:"ss01","cv11";}
+  button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:inherit}
+  input,select,textarea{font-family:inherit}
+  .mono-tag{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+  .mono-tag.dim{color:var(--muted-2)}
+
+  .app{min-height:100vh;display:flex;flex-direction:column}
+
+  /* ── header ── */
+  .app-head{
+    flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;
+    padding:18px 28px;border-bottom:1px solid var(--line);background:var(--pane);
+  }
+  .brand-row{display:flex;align-items:center;gap:14px}
+  .brand-dot{width:10px;height:10px;border-radius:50%;
+    background:conic-gradient(from 0deg, var(--warm), var(--crisp), var(--bento), var(--warm))}
+  .brand-name{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .brand-sub{font-size:12px;color:var(--muted);margin-top:1px}
+  .head-right{display:flex;gap:14px;align-items:center}
+
+  /* ── body ── */
+  .app-body{flex:1 1 auto;display:grid;grid-template-columns:440px 1fr;min-height:0}
+
+  /* ── form pane ── */
+  .form-pane{
+    border-right:1px solid var(--line);background:var(--pane);
+    overflow-y:auto;padding:8px 28px 32px;
+  }
+  .grp{padding:28px 0;border-bottom:1px solid var(--line)}
+  .grp:last-of-type{border-bottom:0}
+  .grp-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+  .grp-num{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--muted);padding-top:3px}
+  .grp-name{font-size:15px;font-weight:600;letter-spacing:-.01em}
+  .grp-sub{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.5}
+
+  /* direction picker */
+  .seg-direction{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .dir-card{padding:14px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    display:flex;flex-direction:column;align-items:flex-start;gap:10px;transition:all .15s;text-align:left}
+  .dir-card:hover{border-color:var(--ink-2)}
+  .dir-card.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+  .dir-swatch{width:100%;height:42px;border-radius:4px;border:1px solid;display:flex;align-items:center;justify-content:center;gap:6px}
+  .dir-swatch span{width:14px;height:14px;border-radius:50%;display:block}
+  .dir-name{font-size:13px;font-weight:500}
+
+  /* layout picker */
+  .seg-layout{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .lay-card{padding:8px;border:1px solid var(--line);border-radius:6px;background:#fff;
+    display:flex;flex-direction:column;gap:6px;align-items:stretch;transition:all .15s}
+  .lay-card:hover{border-color:var(--ink-2)}
+  .lay-card.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+  .lay-card svg{width:100%;height:auto;display:block;border-radius:3px}
+  .lay-meta{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:0 1px}
+  .lay-num{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--muted);letter-spacing:.04em}
+  .lay-name{font-size:10.5px;font-weight:500}
+
+  /* type picker */
+  .seg-type{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .type-card{padding:18px 12px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .15s}
+  .type-card:hover{border-color:var(--ink-2)}
+  .type-card.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+  .type-sample{font-size:24px;color:var(--ink);line-height:1}
+  .type-name{font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+
+  /* uploader */
+  .uploader{
+    position:relative;border:1.5px dashed var(--line-2);border-radius:8px;
+    padding:32px 18px;text-align:center;cursor:pointer;background:#FCFBF8;
+    transition:all .15s;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  }
+  .uploader:hover{border-color:var(--ink-2);background:#fff}
+  .uploader.drag{border-color:var(--ink);background:#fff}
+  .uploader.has{padding:0;border-style:solid;border-color:var(--line);overflow:hidden;background:var(--ink)}
+  .uploader.has img{width:100%;height:200px;object-fit:cover;display:block}
+  .uploader .rm{
+    position:absolute;top:10px;right:10px;
+    padding:6px 12px;background:rgba(0,0,0,.75);color:#fff;
+    border-radius:999px;font-size:11.5px;font-weight:500;
+    backdrop-filter:blur(8px);
+  }
+  .uploader .rm:hover{background:#000}
+  .up-icon{font-size:22px;color:var(--muted);line-height:1}
+  .up-lbl{font-size:13px;font-weight:500}
+  .up-hint{font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--muted);letter-spacing:.04em}
+
+  /* fields */
+  .field{margin-bottom:14px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--muted);
+    letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+  .field input{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;
+    background:#fff;font:400 14px/1.4 'Geist',sans-serif;color:var(--ink);
+    outline:none;transition:border-color .15s, box-shadow .15s;
+  }
+  .field input::placeholder{color:var(--muted-2)}
+  .field input:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .form-foot{display:flex;justify-content:space-between;align-items:center;padding:20px 0 0;margin-top:8px;border-top:1px solid var(--line)}
+  .reset{font-size:12.5px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+  .reset:hover{color:var(--ink)}
+
+  /* ── preview pane ── */
+  .preview-pane{
+    background:
+      linear-gradient(var(--bg), var(--bg)),
+      repeating-linear-gradient(45deg, transparent 0 14px, rgba(0,0,0,.02) 14px 15px);
+    padding:24px 32px 32px;
+    display:flex;flex-direction:column;gap:18px;overflow:hidden;min-height:0;
+  }
+  .prev-head{display:flex;justify-content:space-between;align-items:baseline;
+    padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .prev-head .grp-sub{margin:0}
+
+  .prev-row{flex:1 1 auto;display:flex;gap:32px;justify-content:center;align-items:center;min-height:0}
+  .prev-col{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .prev-tag{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .prev-frame{
+    overflow:hidden;background:#000;
+    box-shadow:0 30px 60px -30px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.06);
+    border-radius:4px;
+  }
+  .prev-stage{position:relative}
+
+  .dl-btn{
+    padding:12px 22px;background:var(--ink);color:#fff;
+    border-radius:999px;font-size:13.5px;font-weight:500;letter-spacing:.01em;
+    transition:transform .15s, background .15s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .dl-btn:hover{background:#000;transform:translateY(-1px)}
+  .dl-btn:disabled{opacity:.6;cursor:wait;transform:none}
+
+  /* ── responsive ── */
+  @media (max-width: 1100px){
+    .app-body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+    .form-pane{border-right:0;border-bottom:1px solid var(--line);max-height:55vh}
+    .preview-pane{padding:24px}
+  }
+</style>
+</head>
+<body>
+
+<script>
+  if (!document.cookie.split(';').some(c => c.trim().startsWith('llauth='))) {
+    window.location.replace('/login');
+  }
+</script>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script type="text/babel">
+/* ═══════════════════════════════════════════════════════════════
+   TEMPLATES
+   ═══════════════════════════════════════════════════════════════ */
+
+const DIRECTIONS = {
+  warm:  {
+    name: 'Quente',
+    bg:'#FAF7F2', surface:'#FFFFFF', ink:'#1A1A1A', ink2:'#3A3A3A',
+    muted:'#707070', line:'#ECE7DE', accent:'#C5532B', accentSoft:'#F2E6D8',
+    accentInk:'#FFFFFF',
+  },
+  crisp: {
+    name: 'Limpo',
+    bg:'#FFFFFF', surface:'#F7F6F3', ink:'#0A0A0A', ink2:'#262626',
+    muted:'#737373', line:'#E8E8E5', accent:'#1B4D3E', accentSoft:'#E8F0EC',
+    accentInk:'#FFFFFF',
+  },
+  bento: {
+    name: 'Bento',
+    bg:'#FFF6E0', surface:'#FFFFFF', ink:'#1A1A18', ink2:'#3A3A36',
+    muted:'#6E6A60', line:'#F2E7C8', accent:'#E8A02A', accentSoft:'#FCEBC4',
+    accentInk:'#1A1A18',
+  },
+};
+
+const TYPE = {
+  editorial: {
+    name:'Editorial',
+    family:`'Newsreader', 'Times New Roman', serif`,
+    style:'italic', weight:300, tracking:'-0.02em',
+  },
+  modern: {
+    name:'Moderno',
+    family:`'Geist', system-ui, sans-serif`,
+    style:'normal', weight:500, tracking:'-0.03em',
+  },
+  display: {
+    name:'Maiúsculas',
+    family:`'Geist', system-ui, sans-serif`,
+    style:'normal', weight:600, tracking:'0.04em',
+    uppercase:true,
+  },
+};
+
+const mono = `'Geist Mono', ui-monospace, monospace`;
+const sans = `'Geist', system-ui, sans-serif`;
+
+function BrandMark({ d, color='inherit', size=1, dark=false, name='Lugares & Laços' }) {
+  const ink = dark ? '#fff' : color;
+  return (
+    <div style={{
+      display:'inline-flex', alignItems:'center', gap: 10*size,
+      fontFamily: sans, fontWeight: 500,
+      fontSize: 18*size, letterSpacing:'-0.01em', color: ink,
+    }}>
+      <span style={{
+        width: 12*size, height: 12*size, borderRadius:'50%',
+        background: dark ? '#fff' : d.accent,
+        display:'inline-block', flexShrink:0,
+      }}/>
+      <span>{name}</span>
+    </div>
+  );
+}
+
+function Photo({ src, d, style }) {
+  return (
+    <div style={{
+      position:'absolute', inset:0,
+      background: src
+        ? `center/cover no-repeat url(${src})`
+        : `linear-gradient(135deg, ${d.accent} 0%, ${d.ink} 100%)`,
+      ...style,
+    }}>
+      {!src && (
+        <div style={{
+          position:'absolute', inset:0,
+          display:'grid', placeItems:'center',
+          color:'rgba(255,255,255,.4)',
+          fontFamily: mono, fontSize: 18, letterSpacing:'.1em',
+        }}>SUA FOTO</div>
+      )}
+    </div>
+  );
+}
+
+function DisplayName({ text, d, t, size, color='inherit', maxWidth }) {
+  if (!text) return null;
+  return (
+    <h1 style={{
+      margin:0,
+      fontFamily: t.family,
+      fontStyle: t.style,
+      fontWeight: t.weight,
+      letterSpacing: t.tracking,
+      textTransform: t.uppercase ? 'uppercase' : 'none',
+      fontSize: size,
+      lineHeight: t.style==='italic' ? 1.0 : 1.02,
+      color,
+      maxWidth,
+      textWrap:'balance',
+    }}>{text}</h1>
+  );
+}
+
+function Mono({ children, color, size=18, tracking='.12em', style }) {
+  if (!children) return null;
+  return (
+    <span style={{
+      fontFamily: mono, fontSize: size, letterSpacing: tracking,
+      textTransform:'uppercase', color, ...style,
+    }}>{children}</span>
+  );
+}
+
+function Rule({ color, vertical=false, length, thickness=1 }) {
+  return <span style={{
+    display:'inline-block',
+    width: vertical? thickness : length,
+    height: vertical? length : thickness,
+    background: color, flexShrink:0,
+  }}/>;
+}
+
+function Badge({ text, d, size=1 }) {
+  if (!text) return null;
+  return (
+    <div style={{
+      width: 140*size, height:140*size, borderRadius:'50%',
+      background: d.accent, color: d.accentInk,
+      display:'grid', placeItems:'center',
+      fontFamily: sans, fontWeight:600,
+      fontSize: 38*size, letterSpacing:'-.02em',
+      transform: `rotate(-8deg)`,
+      boxShadow:`0 8px 30px -10px ${d.accent}66`,
+    }}>{text}</div>
+  );
+}
+
+function detailItems(data) {
+  return [
+    data.price &&    { k:'Desde',    v:data.price, sub:data.priceLabel },
+    data.duration && { k:'Duração', v:data.duration },
+    data.dates &&    { k:'Quando',  v:data.dates },
+  ].filter(Boolean);
+}
+
+/* ── Layout 01: BLEED ── */
+function LayoutBleed({ data, d, t, format }) {
+  const isSq = format==='square';
+  const W = 1080, H = isSq? 1080:1920;
+  const items = detailItems(data);
+  return (
+    <div style={{position:'relative', width:W, height:H, overflow:'hidden', background:'#000'}}>
+      <Photo src={data.image} d={d}/>
+      <div style={{position:'absolute', inset:0, background:
+        'linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 18%, rgba(0,0,0,0) 45%, rgba(0,0,0,.45) 72%, rgba(0,0,0,.85) 100%)'}}/>
+
+      <div style={{position:'absolute', top: isSq?56:72, left:64, right:64,
+        display:'flex', justifyContent:'space-between', alignItems:'flex-start', color:'#fff'}}>
+        <BrandMark d={d} color="#fff" size={1.6} dark name={data.business}/>
+        {data.badge && <Badge text={data.badge} d={d} size={1}/>}
+      </div>
+
+      <div style={{position:'absolute', left:64, right:64, bottom: isSq?64:120, color:'#fff'}}>
+        {data.headline && (
+          <Mono color="rgba(255,255,255,.78)" size={22} tracking=".14em" style={{display:'block', marginBottom:24}}>{data.headline}</Mono>
+        )}
+        <DisplayName text={data.destination} d={d} t={t}
+          size={isSq? 132 : 168} color="#fff" maxWidth={isSq?900:980}/>
+
+        {items.length>0 && (
+          <div style={{
+            marginTop: 44, paddingTop:28,
+            borderTop:'1px solid rgba(255,255,255,.28)',
+            display:'flex', gap: isSq? 56:72, color:'#fff',
+          }}>
+            {items.map((it,i)=>(
+              <div key={i}>
+                <Mono color="rgba(255,255,255,.65)" size={18} tracking=".12em">{it.k}</Mono>
+                <div style={{fontFamily:sans, fontSize: isSq?34:40, fontWeight:500, letterSpacing:'-.01em', marginTop:6}}>{it.v}</div>
+                {it.sub && <div style={{fontFamily:mono, fontSize: isSq?16:20, letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.75)', marginTop:4}}>{it.sub}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{marginTop: 36, display:'flex', justifyContent:'space-between', alignItems:'center', gap:24, flexWrap:'wrap'}}>
+          {data.cta && (
+            <div style={{
+              display:'inline-flex', alignItems:'center', gap:14,
+              padding:'18px 32px', background:'#fff', color:d.ink,
+              borderRadius:999, fontFamily:sans, fontSize:24, fontWeight:500,
+            }}>{data.cta} <span>→</span></div>
+          )}
+          {data.contact && (
+            <Mono color="rgba(255,255,255,.78)" size={20} tracking=".08em">{data.contact}</Mono>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Layout 02: PANEL ── */
+function LayoutPanel({ data, d, t, format }) {
+  const isSq = format==='square';
+  const W = 1080, H = isSq? 1080:1920;
+  const photoH = isSq? 600 : 1180;
+  const items = detailItems(data);
+  return (
+    <div style={{position:'relative', width:W, height:H, overflow:'hidden', background:d.bg}}>
+      <div style={{position:'absolute', top:0, left:0, right:0, height:photoH, overflow:'hidden'}}>
+        <Photo src={data.image} d={d}/>
+        <div style={{position:'absolute', top:48, left:64, right:64,
+          display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+          <BrandMark d={d} color="#fff" size={1.4} dark name={data.business}/>
+          {data.badge && <Badge text={data.badge} d={d} size={.7}/>}
+        </div>
+      </div>
+
+      <div style={{position:'absolute', top:photoH, left:0, right:0, bottom:0,
+        padding: isSq? '56px 64px' : '72px 72px', display:'flex', flexDirection:'column'}}>
+        {data.headline && (
+          <Mono color={d.accent} size={20} tracking=".14em" style={{display:'block', marginBottom:18}}>{data.headline}</Mono>
+        )}
+        <DisplayName text={data.destination} d={d} t={t}
+          size={isSq? 84 : 132} color={d.ink} maxWidth={'100%'}/>
+
+        {items.length>0 && (
+          <div style={{
+            marginTop:'auto', paddingTop:28,
+            borderTop:`1px solid ${d.line}`,
+            display:'flex', gap: isSq? 48:64,
+          }}>
+            {items.map((it,i)=>(
+              <div key={i}>
+                <Mono color={d.muted} size={16} tracking=".12em">{it.k}</Mono>
+                <div style={{fontFamily:sans, fontSize: isSq?30:40, fontWeight:500, letterSpacing:'-.01em', marginTop:6, color:d.ink}}>{it.v}</div>
+                {it.sub && <div style={{fontFamily:mono, fontSize: isSq?15:19, letterSpacing:'.08em', textTransform:'uppercase', color:d.muted, marginTop:4}}>{it.sub}</div>}
+              </div>
+            ))}
+            <div style={{marginLeft:'auto', display:'flex', alignItems:'center', gap:18}}>
+              {data.cta && (
+                <div style={{
+                  display:'inline-flex', alignItems:'center', gap:12,
+                  padding: isSq? '14px 26px' : '20px 36px',
+                  background:d.ink, color:'#fff',
+                  borderRadius:999, fontFamily:sans, fontSize: isSq?22:28, fontWeight:500,
+                }}>{data.cta} <span>→</span></div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!items.length && (data.cta || data.contact) && (
+          <div style={{marginTop:'auto', paddingTop:28, borderTop:`1px solid ${d.line}`, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+            <Mono color={d.muted} size={18} tracking=".08em">{data.contact}</Mono>
+            {data.cta && (
+              <div style={{
+                display:'inline-flex', alignItems:'center', gap:12,
+                padding:'16px 30px', background:d.ink, color:'#fff',
+                borderRadius:999, fontFamily:sans, fontSize:24, fontWeight:500,
+              }}>{data.cta} <span>→</span></div>
+            )}
+          </div>
+        )}
+
+        {items.length>0 && data.contact && (
+          <div style={{marginTop:24, fontFamily:mono, fontSize:18, letterSpacing:'.08em', color:d.muted, textTransform:'uppercase'}}>{data.contact}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Layout 03: POSTCARD ── */
+function LayoutPostcard({ data, d, t, format }) {
+  const isSq = format==='square';
+  const W = 1080, H = isSq? 1080:1920;
+  const pad = isSq? 80 : 100;
+  const items = detailItems(data);
+  const photoTop = isSq? 260 : 400;
+  const photoH = isSq? 460 : 1000;
+
+  return (
+    <div style={{position:'relative', width:W, height:H, overflow:'hidden', background:d.bg,
+      fontFamily:sans, color:d.ink}}>
+
+      <div style={{position:'absolute', top:pad, left:pad, right:pad,
+        display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <BrandMark d={d} size={1.4} name={data.business}/>
+        <Mono color={d.muted} size={18} tracking=".14em">POSTAL · N.º {(data.destination||'XX').slice(0,3).toUpperCase()}</Mono>
+      </div>
+
+      <div style={{position:'absolute', top: isSq? 96:200, left:pad, right:pad, paddingTop: 56, zIndex:3}}>
+        <DisplayName text={data.destination} d={d} t={t}
+          size={isSq? 72 : 110} color={d.ink}/>
+      </div>
+
+      <div style={{position:'absolute', top:photoTop, left:pad, right:pad, height:photoH,
+        background:'#fff', padding: isSq? 18:24,
+        filter:`drop-shadow(0 12px 30px rgba(0,0,0,.18))`,
+        transform:'rotate(-1deg)', zIndex:1}}>
+        <div style={{position:'relative', width:'100%', height:'100%', overflow:'hidden', background:'#eee'}}>
+          <Photo src={data.image} d={d}/>
+        </div>
+        {data.badge && (
+          <div style={{position:'absolute', top:-30, right: isSq? 60:80, transform:'rotate(6deg)'}}>
+            <Badge text={data.badge} d={d} size={.7}/>
+          </div>
+        )}
+      </div>
+
+      <div style={{position:'absolute', left:pad, right:pad, bottom:pad,
+        display:'flex', flexDirection:'column', gap: 22}}>
+        {data.headline && (
+          <div style={{fontFamily:`'Newsreader', serif`, fontStyle:'italic', fontWeight:300,
+            fontSize: isSq? 24 : 36, color:d.ink2, maxWidth: isSq? 720 : 880, lineHeight:1.35,
+            paddingBottom: 18, borderBottom:`1px solid ${d.line}`}}>
+            {data.headline}
+          </div>
+        )}
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:24}}>
+          <div style={{display:'flex', flexDirection:'column', gap: 16}}>
+            {items.length>0 && (
+              <div style={{display:'flex', gap: isSq? 36:56}}>
+                {items.map((it,i)=>(
+                  <div key={i}>
+                    <Mono color={d.muted} size={14} tracking=".12em">{it.k}</Mono>
+                    <div style={{fontSize: isSq?24:30, fontWeight:500, letterSpacing:'-.01em', marginTop:4}}>{it.v}</div>
+                    {it.sub && <div style={{fontFamily:mono, fontSize: isSq?13:17, letterSpacing:'.08em', textTransform:'uppercase', color:d.muted, marginTop:3}}>{it.sub}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {data.contact && (
+              <Mono color={d.muted} size={16} tracking=".08em">{data.contact}</Mono>
+            )}
+          </div>
+          {data.cta && (
+            <div style={{
+              display:'inline-flex', alignItems:'center', gap:12,
+              padding: isSq? '14px 24px' : '18px 32px',
+              border:`1.5px solid ${d.ink}`, borderRadius:999,
+              fontFamily:sans, fontSize: isSq?20:26, fontWeight:500,
+            }}>{data.cta} <span>→</span></div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Layout 04: EDITORIAL ── */
+function LayoutEditorial({ data, d, t, format }) {
+  const isSq = format==='square';
+  const W = 1080, H = isSq? 1080:1920;
+  const items = detailItems(data);
+  const photoH = isSq? 520 : 1080;
+
+  return (
+    <div style={{position:'relative', width:W, height:H, overflow:'hidden', background:d.bg, color:d.ink}}>
+      <div style={{position:'absolute', top: isSq?56:72, left:64, right:64,
+        display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <BrandMark d={d} size={1.3} name={data.business}/>
+      </div>
+
+      <div style={{position:'absolute', top: isSq? 140:180, left:64, right:64}}>
+        {data.headline && (
+          <Mono color={d.accent} size={20} tracking=".14em" style={{display:'block', marginBottom:18}}>{data.headline}</Mono>
+        )}
+        <DisplayName text={data.destination} d={d} t={t}
+          size={isSq? 168 : 232} color={d.ink}/>
+      </div>
+
+      <div style={{position:'absolute', bottom:0, left:0, right:0, height:photoH, overflow:'hidden'}}>
+        <Photo src={data.image} d={d}/>
+
+        <div style={{position:'absolute', left:64, right:64, bottom:64,
+          display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:24, color:'#fff'}}>
+          <div style={{display:'flex', gap: isSq? 36:60}}>
+            {items.map((it,i)=>(
+              <div key={i}>
+                <Mono color="rgba(255,255,255,.78)" size={16} tracking=".12em">{it.k}</Mono>
+                <div style={{fontFamily:sans, fontSize: isSq?28:36, fontWeight:500, letterSpacing:'-.01em', marginTop:6}}>{it.v}</div>
+                {it.sub && <div style={{fontFamily:mono, fontSize: isSq?14:18, letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.75)', marginTop:4}}>{it.sub}</div>}
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:12}}>
+            {data.cta && (
+              <div style={{
+                display:'inline-flex', alignItems:'center', gap:12,
+                padding: isSq? '14px 26px' : '18px 32px',
+                background:d.accent, color:d.accentInk,
+                borderRadius:999, fontFamily:sans, fontSize: isSq?20:26, fontWeight:500,
+              }}>{data.cta} <span>→</span></div>
+            )}
+            {data.contact && (
+              <Mono color="rgba(255,255,255,.85)" size={16} tracking=".08em">{data.contact}</Mono>
+            )}
+          </div>
+        </div>
+
+        <div style={{position:'absolute', inset:0, background:
+          'linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.55) 100%)'}}/>
+      </div>
+
+      {data.badge && (
+        <div style={{position:'absolute',
+          bottom: photoH - (isSq? 50 : 60),
+          right: isSq? 80 : 120, zIndex:5}}>
+          <Badge text={data.badge} d={d} size={.85}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Layout 05: INSET ── */
+function LayoutInset({ data, d, t, format }) {
+  const isSq = format==='square';
+  const W = 1080, H = isSq? 1080:1920;
+  const items = detailItems(data);
+  const cardX = isSq? 80 : 110;
+  const cardW = W - cardX*2;
+  const cardY = isSq? 240 : 480;
+  const cardH = isSq? 540 : 1000;
+
+  return (
+    <div style={{position:'relative', width:W, height:H, overflow:'hidden',
+      background: d.accent, color: d.accentInk}}>
+
+      <div style={{position:'absolute', inset:0, background:
+        `radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.08), transparent 60%),
+         radial-gradient(ellipse at 80% 90%, rgba(0,0,0,.18), transparent 60%)`}}/>
+
+      <div style={{position:'absolute', top: isSq?56:72, left:cardX, right:cardX,
+        display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+        <BrandMark d={d} color={d.accentInk} size={1.3} name={data.business}/>
+        {data.badge && (
+          <div style={{
+            padding: isSq? '10px 20px' : '14px 26px',
+            border:`1.5px solid ${d.accentInk}`, borderRadius:999,
+            fontFamily:sans, fontWeight:600, fontSize: isSq?22:30, color:d.accentInk,
+            letterSpacing:'-.01em',
+          }}>{data.badge}</div>
+        )}
+      </div>
+
+      <div style={{position:'absolute', top: isSq?130:200, left:cardX, right:cardX}}>
+        {data.headline && (
+          <Mono color={d.accentInk} size={18} tracking=".14em" style={{display:'block', marginBottom:14, opacity:.75}}>{data.headline}</Mono>
+        )}
+        <DisplayName text={data.destination} d={d} t={t}
+          size={isSq? 76 : 120} color={d.accentInk}/>
+      </div>
+
+      <div style={{position:'absolute', left:cardX, top:cardY, width:cardW, height:cardH,
+        overflow:'hidden', boxShadow:`0 30px 80px -30px rgba(0,0,0,.5)`}}>
+        <Photo src={data.image} d={d}/>
+      </div>
+
+      <div style={{position:'absolute', left:cardX, right:cardX, bottom: isSq?64:96,
+        display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:24}}>
+        <div style={{display:'flex', flexDirection:'column', gap:18}}>
+          {items.length>0 && (
+            <div style={{display:'flex', gap: isSq? 40:64}}>
+              {items.map((it,i)=>(
+                <div key={i}>
+                  <Mono color={d.accentInk} size={14} tracking=".12em" style={{opacity:.7}}>{it.k}</Mono>
+                  <div style={{fontFamily:sans, fontSize: isSq?26:34, fontWeight:500, letterSpacing:'-.01em', marginTop:6, color:d.accentInk}}>{it.v}</div>
+                  {it.sub && <div style={{fontFamily:mono, fontSize: isSq?13:17, letterSpacing:'.08em', textTransform:'uppercase', color:d.accentInk, opacity:.8, marginTop:3}}>{it.sub}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          {data.contact && (
+            <Mono color={d.accentInk} size={16} tracking=".08em" style={{opacity:.8}}>{data.contact}</Mono>
+          )}
+        </div>
+        {data.cta && (
+          <div style={{
+            display:'inline-flex', alignItems:'center', gap:12,
+            padding: isSq? '14px 26px' : '20px 36px',
+            background: d.accentInk, color:d.accent,
+            borderRadius:999, fontFamily:sans, fontSize: isSq?22:28, fontWeight:600,
+          }}>{data.cta} <span>→</span></div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const LAYOUTS = [
+  { id:'bleed',     name:'Pleno',     Component:LayoutBleed     },
+  { id:'panel',     name:'Painel',    Component:LayoutPanel     },
+  { id:'postcard',  name:'Postal',    Component:LayoutPostcard  },
+  { id:'editorial', name:'Editorial', Component:LayoutEditorial },
+  { id:'inset',     name:'Cartão',    Component:LayoutInset     },
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   APP
+   ═══════════════════════════════════════════════════════════════ */
+
+const { useState, useEffect, useRef } = React;
+
+const DEFAULTS = {
+  business: 'Lugares & Laços',
+  destination: 'Sifnos, Grécia',
+  headline: 'Uma semana longa e tranquila nas Cíclades',
+  price: '€2.180',
+  priceLabel: 'por pessoa',
+  duration: '7 noites',
+  dates: 'Junho – Setembro',
+  cta: 'Reservar agora',
+  badge: '',
+  contact: 'lugareselacos.pt',
+  image: '',
+  direction: 'warm',
+  layout: 'bleed',
+  type: 'editorial',
+};
+
+function Field({ label, children }) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function TextInput({ value, onChange, placeholder }) {
+  return <input type="text" value={value} placeholder={placeholder}
+    onChange={e=>onChange(e.target.value)}/>;
+}
+
+function DirectionPicker({ value, onChange }) {
+  return (
+    <div className="seg-direction">
+      {Object.entries(DIRECTIONS).map(([id,d])=>(
+        <button key={id} type="button"
+          className={'dir-card '+(value===id?'on':'')}
+          onClick={()=>onChange(id)}>
+          <div className="dir-swatch" style={{background:d.bg, borderColor:d.line}}>
+            <span style={{background:d.accent}}/>
+            <span style={{background:d.ink}}/>
+          </div>
+          <div className="dir-name">{d.name}</div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function LayoutPicker({ value, onChange }) {
+  return (
+    <div className="seg-layout">
+      {LAYOUTS.map((L, i)=>(
+        <button key={L.id} type="button"
+          className={'lay-card '+(value===L.id?'on':'')}
+          onClick={()=>onChange(L.id)}>
+          <LayoutThumb id={L.id}/>
+          <div className="lay-meta">
+            <div className="lay-num">0{i+1}</div>
+            <div className="lay-name">{L.name}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function LayoutThumb({ id }) {
+  const c = "#1A1A1A", a = "#C5532B", bg = "#FAF7F2";
+  const sw = { width:54, height:54, viewBox:'0 0 54 54' };
+  switch(id) {
+    case 'bleed': return (
+      <svg {...sw}><rect width="54" height="54" fill={c}/>
+        <rect x="0" y="34" width="54" height="20" fill="rgba(0,0,0,.4)"/>
+        <rect x="6" y="40" width="22" height="3" fill="#fff"/>
+        <rect x="6" y="46" width="14" height="2" fill="rgba(255,255,255,.6)"/>
+        <circle cx="46" cy="8" r="4" fill={a}/></svg>);
+    case 'panel': return (
+      <svg {...sw}><rect width="54" height="54" fill={bg}/>
+        <rect width="54" height="32" fill={c}/>
+        <rect x="6" y="38" width="20" height="3" fill={c}/>
+        <rect x="6" y="44" width="30" height="2" fill="rgba(0,0,0,.4)"/>
+        <rect x="40" y="42" width="10" height="5" rx="2.5" fill={c}/></svg>);
+    case 'postcard': return (
+      <svg {...sw}><rect width="54" height="54" fill={bg}/>
+        <g transform="rotate(-2 27 27)">
+          <rect x="8" y="14" width="38" height="28" fill="#fff" stroke="#ddd"/>
+          <rect x="10" y="16" width="34" height="24" fill={c}/>
+        </g>
+        <rect x="8" y="6" width="14" height="2" fill={c}/>
+        <rect x="8" y="46" width="20" height="2" fill="rgba(0,0,0,.5)"/></svg>);
+    case 'editorial': return (
+      <svg {...sw}><rect width="54" height="54" fill={bg}/>
+        <rect x="6" y="14" width="42" height="6" fill={c}/>
+        <rect x="6" y="22" width="30" height="6" fill={c}/>
+        <rect width="54" height="20" y="34" fill={c}/></svg>);
+    case 'inset': return (
+      <svg {...sw}><rect width="54" height="54" fill={a}/>
+        <rect x="10" y="18" width="34" height="22" fill={c}/>
+        <rect x="10" y="8" width="20" height="3" fill="#fff"/>
+        <rect x="10" y="44" width="14" height="2" fill="rgba(255,255,255,.7)"/></svg>);
+    default: return null;
+  }
+}
+
+function TypePicker({ value, onChange }) {
+  return (
+    <div className="seg-type">
+      {Object.entries(TYPE).map(([id, t])=>(
+        <button key={id} type="button"
+          className={'type-card '+(value===id?'on':'')}
+          onClick={()=>onChange(id)}>
+          <div className="type-sample" style={{
+            fontFamily: t.family,
+            fontStyle: t.style,
+            fontWeight: t.weight,
+            letterSpacing: t.tracking,
+            textTransform: t.uppercase ? 'uppercase' : 'none',
+          }}>Lisboa</div>
+          <div className="type-name">{t.name}</div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ImageUpload({ value, onChange }) {
+  const inputRef = useRef();
+  const [drag, setDrag] = useState(false);
+  const handleFile = (file) => {
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => onChange(r.result);
+    r.readAsDataURL(file);
+  };
+  return (
+    <div className={'uploader '+(drag?'drag':'')+' '+(value?'has':'')}
+      onDragOver={e=>{e.preventDefault();setDrag(true)}}
+      onDragLeave={()=>setDrag(false)}
+      onDrop={e=>{e.preventDefault();setDrag(false);handleFile(e.dataTransfer.files[0])}}
+      onClick={()=>inputRef.current.click()}>
+      {value
+        ? <>
+            <img src={value} alt=""/>
+            <button type="button" className="rm" onClick={e=>{e.stopPropagation();onChange('')}}>Remover</button>
+          </>
+        : <>
+            <div className="up-icon">↑</div>
+            <div className="up-lbl">Arraste uma foto ou clique para escolher</div>
+            <div className="up-hint">JPG / PNG · idealmente 1200px+ de largura</div>
+          </>
+      }
+      <input ref={inputRef} type="file" accept="image/*" hidden
+        onChange={e=>handleFile(e.target.files[0])}/>
+    </div>
+  );
+}
+
+function Preview({ data, format, scale, captureRef }) {
+  const W = 1080, H = format==='square'? 1080:1920;
+  const d = DIRECTIONS[data.direction];
+  const t = TYPE[data.type];
+  const L = LAYOUTS.find(l => l.id===data.layout) || LAYOUTS[0];
+  const Comp = L.Component;
+  return (
+    <div className="prev-frame" style={{width: W*scale, height: H*scale}}>
+      <div ref={captureRef} className="prev-stage" style={{
+        width: W, height: H,
+        transform:`scale(${scale})`, transformOrigin:'top left',
+      }}>
+        <Comp data={data} d={d} t={t} format={format}/>
+      </div>
+    </div>
+  );
+}
+
+function MonoTag({ children }) {
+  return <span className="mono-tag">{children}</span>;
+}
+
+function App() {
+  const [data, setData] = useState(DEFAULTS);
+  const sqRef = useRef();
+  const stRef = useRef();
+  const [busy, setBusy] = useState(null);
+
+  const set = (k,v) => setData(p => ({...p, [k]:v}));
+
+  const download = async (format) => {
+    const node = (format==='square'? sqRef : stRef).current;
+    if (!node || !window.html2canvas) return;
+    setBusy(format);
+    try {
+      const prev = node.style.transform;
+      node.style.transform = 'none';
+      await new Promise(r => requestAnimationFrame(r));
+      const W = 1080, H = format==='square'? 1080:1920;
+      const canvas = await window.html2canvas(node, {
+        width: W, height: H, scale: 1, useCORS:true, allowTaint:true,
+        backgroundColor:null,
+      });
+      node.style.transform = prev;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const fn = `LugaresLacos_${(data.destination||'post').replace(/[^a-z0-9]/gi,'_')}_${format==='square'?'1x1':'9x16'}.png`;
+      a.href = url; a.download = fn;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    } catch(e) {
+      console.error(e);
+      alert('Algo correu mal a gerar a imagem. Tente outra foto.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const [scales, setScales] = useState({sq:0.4, st:0.22});
+  useEffect(()=>{
+    const recompute = () => {
+      const pane = document.querySelector('.preview-pane');
+      if (!pane) return;
+      const W = pane.clientWidth - 64;
+      const H = pane.clientHeight - 220;
+      const stMaxH = H;
+      const stScaleByH = stMaxH / 1920;
+      const sqScaleByH = stMaxH / 1080;
+      const gap = 32;
+      const sumW = 1080*sqScaleByH + 1080*stScaleByH + gap;
+      if (sumW > W) {
+        const k = W / sumW;
+        setScales({sq: sqScaleByH*k, st: stScaleByH*k});
+      } else {
+        setScales({sq: sqScaleByH, st: stScaleByH});
+      }
+    };
+    recompute();
+    window.addEventListener('resize', recompute);
+    const ro = new ResizeObserver(recompute);
+    const pane = document.querySelector('.preview-pane');
+    if (pane) ro.observe(pane);
+    return ()=>{ window.removeEventListener('resize', recompute); ro.disconnect(); };
+  }, []);
+
+  return (
+    <div className="app">
+      <header className="app-head">
+        <div className="brand-row">
+          <span className="brand-dot"/>
+          <div>
+            <div className="brand-name">Lugares &amp; Laços</div>
+            <div className="brand-sub">Estúdio de Imagens · 1:1 + 9:16</div>
+          </div>
+        </div>
+        <div className="head-right">
+          <span className="mono-tag">FORMATOS · 1080 × 1080 · 1080 × 1920</span>
+        </div>
+      </header>
+
+      <main className="app-body">
+        <aside className="form-pane">
+
+          <section className="grp">
+            <div className="grp-head">
+              <span className="grp-num">01</span>
+              <div>
+                <div className="grp-name">Direção</div>
+                <div className="grp-sub">Escolha um estilo visual.</div>
+              </div>
+            </div>
+            <DirectionPicker value={data.direction} onChange={v=>set('direction',v)}/>
+          </section>
+
+          <section className="grp">
+            <div className="grp-head">
+              <span className="grp-num">02</span>
+              <div>
+                <div className="grp-name">Composição</div>
+                <div className="grp-sub">Cinco hipóteses de layout.</div>
+              </div>
+            </div>
+            <LayoutPicker value={data.layout} onChange={v=>set('layout',v)}/>
+          </section>
+
+          <section className="grp">
+            <div className="grp-head">
+              <span className="grp-num">03</span>
+              <div>
+                <div className="grp-name">Tipografia</div>
+                <div className="grp-sub">Como o nome do destino é composto.</div>
+              </div>
+            </div>
+            <TypePicker value={data.type} onChange={v=>set('type',v)}/>
+          </section>
+
+          <section className="grp">
+            <div className="grp-head">
+              <span className="grp-num">04</span>
+              <div>
+                <div className="grp-name">Fotografia</div>
+                <div className="grp-sub">Adicione uma foto do destino.</div>
+              </div>
+            </div>
+            <ImageUpload value={data.image} onChange={v=>set('image',v)}/>
+          </section>
+
+          <section className="grp">
+            <div className="grp-head">
+              <span className="grp-num">05</span>
+              <div>
+                <div className="grp-name">Conteúdo</div>
+                <div className="grp-sub">Todos os campos são opcionais — campos vazios desaparecem da imagem.</div>
+              </div>
+            </div>
+
+            <Field label="Nome da empresa">
+              <TextInput value={data.business} onChange={v=>set('business',v)}
+                placeholder="Lugares & Laços"/>
+            </Field>
+            <Field label="Destino">
+              <TextInput value={data.destination} onChange={v=>set('destination',v)}
+                placeholder="ex.: Sifnos, Grécia"/>
+            </Field>
+            <Field label="Título / chamada">
+              <TextInput value={data.headline} onChange={v=>set('headline',v)}
+                placeholder="Uma semana longa e tranquila nas Cíclades"/>
+            </Field>
+
+            <div className="row2">
+              <Field label="Preço">
+                <TextInput value={data.price} onChange={v=>set('price',v)}
+                  placeholder="€2.180"/>
+              </Field>
+              <Field label="Qualificador">
+                <TextInput value={data.priceLabel} onChange={v=>set('priceLabel',v)}
+                  placeholder="por pessoa"/>
+              </Field>
+            </div>
+            <Field label="Duração">
+              <TextInput value={data.duration} onChange={v=>set('duration',v)}
+                placeholder="7 noites"/>
+            </Field>
+
+            <Field label="Datas / período">
+              <TextInput value={data.dates} onChange={v=>set('dates',v)}
+                placeholder="Junho – Setembro"/>
+            </Field>
+
+            <div className="row2">
+              <Field label="Botão (call to action)">
+                <TextInput value={data.cta} onChange={v=>set('cta',v)}
+                  placeholder="Reservar agora"/>
+              </Field>
+              <Field label="Selo de desconto">
+                <TextInput value={data.badge} onChange={v=>set('badge',v)}
+                  placeholder="-20%"/>
+              </Field>
+            </div>
+
+            <Field label="Contacto (telefone ou site)">
+              <TextInput value={data.contact} onChange={v=>set('contact',v)}
+                placeholder="lugareselacos.pt · +351 220 137 412"/>
+            </Field>
+          </section>
+
+          <div className="form-foot">
+            <button type="button" className="reset"
+              onClick={()=>setData({...DEFAULTS, image:data.image})}>Repor conteúdo</button>
+            <a href="https://amplifiedcreations.com" target="_blank" rel="noopener noreferrer"
+              style={{fontFamily:"'Geist Mono',monospace",fontSize:11,letterSpacing:'.12em',color:'var(--muted)',textTransform:'uppercase',textDecoration:'none'}}
+              onMouseEnter={e=>e.target.style.color='var(--ink)'}
+              onMouseLeave={e=>e.target.style.color='var(--muted)'}>
+              v0.1 · amplified ®
+            </a>
+          </div>
+        </aside>
+
+        <section className="preview-pane">
+          <div className="prev-head">
+            <MonoTag>Pré-visualização</MonoTag>
+            <span className="grp-sub">Atualiza enquanto escreve. Descarregue cada formato em separado.</span>
+          </div>
+
+          <div className="prev-row">
+            <div className="prev-col">
+              <div className="prev-tag">
+                <span className="mono-tag">1:1 · INSTAGRAM · FACEBOOK</span>
+                <span className="mono-tag dim">1080 × 1080</span>
+              </div>
+              <Preview data={data} format="square" scale={scales.sq} captureRef={sqRef}/>
+              <button className="dl-btn" disabled={!!busy} onClick={()=>download('square')}>
+                {busy==='square' ? 'A gerar…' : 'Descarregar 1:1 PNG ↓'}
+              </button>
+            </div>
+
+            <div className="prev-col">
+              <div className="prev-tag">
+                <span className="mono-tag">9:16 · STORIES · REELS</span>
+                <span className="mono-tag dim">1080 × 1920</span>
+              </div>
+              <Preview data={data} format="story" scale={scales.st} captureRef={stRef}/>
+              <button className="dl-btn" disabled={!!busy} onClick={()=>download('story')}>
+                {busy==='story' ? 'A gerar…' : 'Descarregar 9:16 PNG ↓'}
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+</body>
+</html>
