@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lost Room — WebXR · Amplified Labs</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="A small 3D room that exists between dimensions. Walk in with a headset, orbit with a mouse, drift with a finger.">
+<style>
+  html, body { margin: 0; height: 100%; background: #0e0a08; color: #f6f1e8;
+               font-family: ui-monospace, "JetBrains Mono", "Menlo", monospace; overflow: hidden; }
+  #canvas-wrap { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  .hud { position: fixed; pointer-events: none; z-index: 10; }
+  .hud a, .hud button { pointer-events: auto; font-family: inherit; }
+
+  .tag {
+    top: 24px; left: 28px;
+    color: #f16622; font-size: 11px; letter-spacing: .22em;
+    text-transform: uppercase; opacity: .85;
+  }
+  .tag .blink { animation: blink 1.4s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .title {
+    bottom: 26px; left: 28px;
+    color: #f6f1e8; font-size: 12px; letter-spacing: .12em;
+  }
+  .title strong { color: #f16622; font-weight: 600; }
+  .title small { display: block; opacity: .45; margin-top: 6px; font-size: 10px; }
+
+  .credit {
+    top: 24px; right: 28px;
+    color: rgba(246,241,232,.6); font-size: 10px; letter-spacing: .14em;
+    text-decoration: none; text-transform: uppercase;
+  }
+  .credit:hover { color: #f16622; }
+
+  /* WebXR button (placed bottom-right) */
+  #vr-btn {
+    bottom: 26px; right: 28px;
+    background: transparent; color: #f16622;
+    border: 1px solid #f16622;
+    padding: 10px 18px; border-radius: 4px;
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    cursor: pointer;
+  }
+  #vr-btn:hover { background: #f16622; color: #0e0a08; }
+  #vr-btn.disabled { opacity: .35; cursor: not-allowed; border-style: dashed; }
+  #vr-btn.disabled:hover { background: transparent; color: #f16622; }
+
+  /* Boot splash */
+  .boot {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: center;
+    background: #0e0a08;
+    transition: opacity .8s ease;
+  }
+  .boot.gone { opacity: 0; pointer-events: none; }
+  .boot-inner { text-align: center; }
+  .boot-inner .pulse {
+    width: 14px; height: 14px; margin: 0 auto 14px;
+    border-radius: 999px; background: #f16622;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(.6); opacity: .5; }
+    50%      { transform: scale(1);  opacity: 1; }
+  }
+  .boot-inner small {
+    display: block; color: rgba(241,102,34,.7);
+    font-size: 10px; letter-spacing: .3em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-wrap"></div>
+
+<div class="hud tag">— EXPERIMENT 09 · LOST ROOM<span class="blink">_</span></div>
+<a class="hud credit" href="https://amplifiedcreations.com" target="_blank" rel="noopener">amplified®</a>
+<div class="hud title">
+  <strong>A room that exists between dimensions.</strong>
+  <small>Drag to orbit · scroll to zoom · click "enter VR" with a headset</small>
+</div>
+<button class="hud" id="vr-btn" class="disabled" disabled>Checking VR…</button>
+
+<div class="boot" id="boot">
+  <div class="boot-inner">
+    <div class="pulse"></div>
+    <small>Loading the void…</small>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three":          "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { VRButton }      from 'three/addons/webxr/VRButton.js';
+
+const wrap = document.getElementById('canvas-wrap');
+const boot = document.getElementById('boot');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0e0a08');
+scene.fog = new THREE.FogExp2('#0e0a08', 0.06);
+
+const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(0, 1.7, 6);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.xr.enabled = true;
+wrap.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.target.set(0, 1.4, 0);
+controls.maxDistance = 18;
+controls.minDistance = 1.8;
+controls.maxPolarAngle = Math.PI * 0.95;
+
+// === Lights ===
+scene.add(new THREE.AmbientLight(0xfff0e0, 0.18));
+const keyLight = new THREE.PointLight('#f16622', 8, 22, 1.6);
+keyLight.position.set(0, 3.6, 0);
+scene.add(keyLight);
+
+const fillLight = new THREE.PointLight('#5aa8ff', 3, 18, 2);
+fillLight.position.set(-4, 1.4, 3);
+scene.add(fillLight);
+
+// === Floor — reflective grid ===
+const floorGeo = new THREE.PlaneGeometry(60, 60, 60, 60);
+const floorMat = new THREE.MeshStandardMaterial({
+  color: '#1a1310', roughness: 0.85, metalness: 0.4,
+  wireframe: false
+});
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+const gridHelper = new THREE.GridHelper(60, 60, '#f16622', '#3a2a22');
+gridHelper.material.opacity = 0.18;
+gridHelper.material.transparent = true;
+scene.add(gridHelper);
+
+// === Floating orbs (the "lost things") ===
+const orbs = [];
+const orbCount = 24;
+for (let i = 0; i < orbCount; i++) {
+  const r = 0.12 + Math.random() * 0.34;
+  const geo = new THREE.IcosahedronGeometry(r, 2);
+  const hue = (14 + Math.random() * 26) / 360; // brand-orange band
+  const col = new THREE.Color().setHSL(hue, 0.85, 0.55 + Math.random() * 0.1);
+  const mat = new THREE.MeshStandardMaterial({
+    color: col, emissive: col, emissiveIntensity: 0.9,
+    roughness: 0.4, metalness: 0.3
+  });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(
+    (Math.random() - 0.5) * 14,
+    1.2 + Math.random() * 4.0,
+    (Math.random() - 0.5) * 14
+  );
+  m.userData.t0 = Math.random() * Math.PI * 2;
+  m.userData.amp = 0.3 + Math.random() * 0.7;
+  m.userData.speed = 0.3 + Math.random() * 0.5;
+  m.userData.baseY = m.position.y;
+  m.userData.spinX = (Math.random() - 0.5) * 0.4;
+  m.userData.spinY = (Math.random() - 0.5) * 0.6;
+  scene.add(m);
+  orbs.push(m);
+}
+
+// === Central rotating obelisk (the brand stamp) ===
+const obeliskGeo = new THREE.OctahedronGeometry(0.7, 0);
+const obeliskMat = new THREE.MeshPhysicalMaterial({
+  color: '#f16622',
+  emissive: '#f16622',
+  emissiveIntensity: 1.4,
+  roughness: 0.05, metalness: 0.6, transmission: 0.5, ior: 1.4,
+  clearcoat: 1, clearcoatRoughness: 0.04,
+});
+const obelisk = new THREE.Mesh(obeliskGeo, obeliskMat);
+obelisk.position.set(0, 1.6, 0);
+scene.add(obelisk);
+
+// === Ring of dots (echo of the brand orbital trace from amplifiedlabs/canvas-demos) ===
+const ringDots = new THREE.Group();
+const ringCount = 80;
+for (let i = 0; i < ringCount; i++) {
+  const a = (i / ringCount) * Math.PI * 2;
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(0.05, 12, 12),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL((14 + i) / 360, 0.9, 0.6) })
+  );
+  dot.position.set(Math.cos(a) * 4.5, 1.6, Math.sin(a) * 4.5);
+  ringDots.add(dot);
+}
+scene.add(ringDots);
+
+// === Distant stars (drifting context) ===
+const starGeo = new THREE.BufferGeometry();
+const starPos = new Float32Array(500 * 3);
+for (let i = 0; i < 500; i++) {
+  starPos[i * 3]     = (Math.random() - 0.5) * 80;
+  starPos[i * 3 + 1] = Math.random() * 30;
+  starPos[i * 3 + 2] = (Math.random() - 0.5) * 80;
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: '#ffd9bf', size: 0.04, sizeAttenuation: true, opacity: 0.55, transparent: true }));
+scene.add(stars);
+
+// === Animation ===
+const clock = new THREE.Clock();
+function animate() {
+  const dt = clock.getDelta();
+  const t = clock.getElapsedTime();
+
+  // Float orbs
+  for (const o of orbs) {
+    o.position.y = o.userData.baseY + Math.sin(t * o.userData.speed + o.userData.t0) * o.userData.amp;
+    o.rotation.x += o.userData.spinX * dt;
+    o.rotation.y += o.userData.spinY * dt;
+  }
+
+  // Rotate ring slowly
+  ringDots.rotation.y = t * 0.12;
+
+  // Spin obelisk
+  obelisk.rotation.y = t * 0.25;
+  obelisk.rotation.x = Math.sin(t * 0.4) * 0.15;
+
+  // Pulse key light
+  keyLight.intensity = 7 + Math.sin(t * 1.4) * 1.2;
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+renderer.setAnimationLoop(animate);
+
+// === Resize ===
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// === WebXR button (inline-friendly: detects support, only enables if headset present) ===
+const vrBtn = document.getElementById('vr-btn');
+if ('xr' in navigator) {
+  navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+    if (supported) {
+      vrBtn.className = 'hud';
+      vrBtn.textContent = 'Enter VR →';
+      vrBtn.disabled = false;
+      // Hand off to three's VRButton — replace ours with theirs (which manages the session)
+      const real = VRButton.createButton(renderer);
+      real.id = 'vr-btn';
+      real.className = 'hud';
+      vrBtn.replaceWith(real);
+    } else {
+      vrBtn.textContent = 'No headset detected';
+      vrBtn.className = 'hud disabled';
+    }
+  }).catch(() => {
+    vrBtn.textContent = 'WebXR unavailable';
+    vrBtn.className = 'hud disabled';
+  });
+} else {
+  vrBtn.textContent = 'WebXR unavailable';
+  vrBtn.className = 'hud disabled';
+}
+
+// Drop the boot splash once we've rendered a frame
+requestAnimationFrame(() => {
+  setTimeout(() => boot.classList.add('gone'), 350);
+  setTimeout(() => boot.remove(), 1400);
+});
+</script>
+
+</body>
+</html>

@@ -16,6 +16,7 @@ Each folder is a self-contained piece — generative art, shaders, utility scrip
 | [`canvas-demos`](./canvas-demos) | Inline canvas generative pieces: orbital trace, flow field, Truchet tiles. Pure browser, no framework. | Canvas 2D · requestAnimationFrame · JavaScript |
 | [`colour-system-generator`](./colour-system-generator) | Single brand hex → 11-step scale, semantic tokens, dark-mode pairing, CSS / Tailwind / SCSS / Figma Tokens output. | HTML · JS · HSL |
 | [`responsive-type-scale`](./responsive-type-scale) | Fluid modular type scale using CSS `clamp()`. Pick base + ratio, get h1–h6 + body ladder. | HTML · CSS · clamp() |
+| [`webxr-lost-room`](./webxr-lost-room) | A small 3D room that exists between dimensions — floating orbs, glowing obelisk, orbital ring, drift fog. Inline 3D for any browser, headset opt-in via WebXR. | Three.js · WebXR · importmap |
 
 ## Running
 
