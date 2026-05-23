@@ -23,10 +23,10 @@
     --on-lime:#0E0E0C;
     --cream:#F3F0E6;
     --on-cream:#0E0E0C;
-    --tier-urgente:#FF6B5B;
-    --tier-imp:#FFB05B;
-    --tier-avaliar:#F5E96B;
-    --tier-vigiar:#9AD0FF;
+    --tier-urgent:#FF6B5B;
+    --tier-high:#FFB05B;
+    --tier-review:#F5E96B;
+    --tier-monitor:#9AD0FF;
     --tier-opc:rgba(255,255,255,.5);
   }
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Inter",ui-sans-serif,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -104,10 +104,10 @@
   .insight{display:flex;flex-direction:column;gap:12px}
   .tier{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:4px 9px;border-radius:99px;background:var(--surface-3);color:var(--ink)}
   .tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-  .tier.URGENTE{color:var(--tier-urgente);background:rgba(255,107,91,.12)}
-  .tier.IMP{color:var(--tier-imp);background:rgba(255,176,91,.12)}
-  .tier.AVALIAR{color:var(--tier-avaliar);background:rgba(245,233,107,.12)}
-  .tier.VIGIAR{color:var(--tier-vigiar);background:rgba(154,208,255,.12)}
+  .tier.URGENT{color:var(--tier-urgent);background:rgba(255,107,91,.12)}
+  .tier.HIGH{color:var(--tier-high);background:rgba(255,176,91,.12)}
+  .tier.REVIEW{color:var(--tier-review);background:rgba(245,233,107,.12)}
+  .tier.MONITOR{color:var(--tier-monitor);background:rgba(154,208,255,.12)}
   .insight h4{margin:4px 0 2px;font-family:"Inter Tight",system-ui;font-weight:600;font-size:17px;letter-spacing:-.01em}
   .insight p{margin:0;font-size:14px;color:var(--ink-soft)}
   .source{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-faint);margin-top:6px;letter-spacing:.04em}
@@ -149,7 +149,6 @@
 
   <header class="top">
     <div class="brand"><span class="dot"></span>jofit<small>— wellness coach preview</small></div>
-    <a href="https://amplifiedcreations.com/lab">← Amplified Labs</a>
   </header>
 
   <!-- HERO -->
@@ -284,7 +283,7 @@
     <div class="card c-insight">
       <p class="k">— JAI · today's nudge</p>
       <div class="insight" id="insight">
-        <span class="tier IMP" id="t">IMP</span>
+        <span class="tier HIGH" id="t">HIGH</span>
         <h4 id="h">Push magnesium to 350 mg before bed</h4>
         <p id="b">Your last panel showed Mg 0.78 mg/dL (range 1.9–2.5) and you reported 4 nights of broken sleep this week. Glycinate form, taken 60 min before sleep, improves sleep architecture in adults with sub-clinical deficiency.</p>
         <span class="source" id="s">Abbasi et al. 2012 · J Res Med Sci · n=46</span>
@@ -302,10 +301,10 @@
       <p class="k">— Stack · derived from last blood panel</p>
       <h3 style="margin-bottom:14px">Supplements</h3>
       <div class="supp-grid">
-        <div class="supp"><span class="tier URGENTE">URGENTE</span><h5>Vitamin D3 + K2</h5><div class="dose">4 000–10 000 IU · with dinner</div><div class="lab">10.11 ng/mL (30–100)</div></div>
-        <div class="supp"><span class="tier IMP">IMP</span><h5>Magnesium glycinate</h5><div class="dose">200–400 mg · pre-sleep</div><div class="lab">0.78 mg/dL (1.9–2.5)</div></div>
-        <div class="supp"><span class="tier AVALIAR">AVALIAR</span><h5>Iron + Vit C</h5><div class="dose">Confirm with GP</div><div class="lab">22.2 µmol/L (47.4–69)</div></div>
-        <div class="supp"><span class="tier VIGIAR">VIGIAR</span><h5>Vitamin B12</h5><div class="dose">1 000 µg / week</div><div class="lab">297 pg/mL (180–914)</div></div>
+        <div class="supp"><span class="tier URGENT">URGENT</span><h5>Vitamin D3 + K2</h5><div class="dose">4 000–10 000 IU · with dinner</div><div class="lab">10.11 ng/mL (30–100)</div></div>
+        <div class="supp"><span class="tier HIGH">HIGH</span><h5>Magnesium glycinate</h5><div class="dose">200–400 mg · pre-sleep</div><div class="lab">0.78 mg/dL (1.9–2.5)</div></div>
+        <div class="supp"><span class="tier REVIEW">REVIEW</span><h5>Iron + Vit C</h5><div class="dose">Confirm with GP</div><div class="lab">22.2 µmol/L (47.4–69)</div></div>
+        <div class="supp"><span class="tier MONITOR">MONITOR</span><h5>Vitamin B12</h5><div class="dose">1 000 µg / week</div><div class="lab">297 pg/mL (180–914)</div></div>
       </div>
     </div>
 
@@ -321,7 +320,7 @@
         <li><strong>Personal delta</strong><span>distance from clinical target</span></li>
         <li><strong>Adherence cost</strong><span>friction × habit history</span></li>
       </ul>
-      <p style="margin-top:14px">Top suggestion surfaces as today's nudge. Anything URGENTE bypasses the queue and always shows first.</p>
+      <p style="margin-top:14px">Top suggestion surfaces as today's nudge. Anything URGENT bypasses the queue and always shows first.</p>
     </div>
     <div>
       <h2>Why editorial dark.</h2>
@@ -350,10 +349,10 @@
 
   // Insight carousel
   const insights = [
-    { t:'IMP',     h:'Push magnesium to 350 mg before bed', b:'Your last panel showed Mg 0.78 mg/dL (range 1.9–2.5) and you reported 4 nights of broken sleep this week. Glycinate form, taken 60 min before sleep, improves sleep architecture in adults with sub-clinical deficiency.', s:'Abbasi et al. 2012 · J Res Med Sci · n=46' },
-    { t:'URGENTE', h:'Vitamin D is 3× below target — start today', b:'Serum 25-OH-D at 10.11 ng/mL puts you in the severe-deficiency band. Bone, immune and insulin pathways all suffer. Start 4 000 IU D3 with the largest fat-containing meal; K2-MK7 in parallel to direct calcium to bone, not arteries.', s:'Holick et al. 2011 · J Clin Endo Metab · meta-analysis' },
-    { t:'AVALIAR', h:'Swap morning espresso further from iron', b:'Coffee polyphenols block up to 40% of non-heme iron absorption when consumed within 60 min of a meal. Your transferrin saturation is borderline — move the espresso to +90 min after breakfast to recover roughly 0.6 mg/day intake.', s:'Morck et al. 1983 · Am J Clin Nutr' },
-    { t:'VIGIAR',  h:'Protein intake trending 18% below target', b:'7-day average is 0.9 g/kg vs the 1.2 g/kg target for your current deficit phase. Continued under-shoot will accelerate lean-mass loss. Add one 25-g protein anchor to breakfast for a low-friction fix.', s:'Helms et al. 2014 · Int J Sport Nutr Exerc Metab' },
+    { t:'HIGH',     h:'Push magnesium to 350 mg before bed', b:'Your last panel showed Mg 0.78 mg/dL (range 1.9–2.5) and you reported 4 nights of broken sleep this week. Glycinate form, taken 60 min before sleep, improves sleep architecture in adults with sub-clinical deficiency.', s:'Abbasi et al. 2012 · J Res Med Sci · n=46' },
+    { t:'URGENT', h:'Vitamin D is 3× below target — start today', b:'Serum 25-OH-D at 10.11 ng/mL puts you in the severe-deficiency band. Bone, immune and insulin pathways all suffer. Start 4 000 IU D3 with the largest fat-containing meal; K2-MK7 in parallel to direct calcium to bone, not arteries.', s:'Holick et al. 2011 · J Clin Endo Metab · meta-analysis' },
+    { t:'REVIEW', h:'Swap morning espresso further from iron', b:'Coffee polyphenols block up to 40% of non-heme iron absorption when consumed within 60 min of a meal. Your transferrin saturation is borderline — move the espresso to +90 min after breakfast to recover roughly 0.6 mg/day intake.', s:'Morck et al. 1983 · Am J Clin Nutr' },
+    { t:'MONITOR',  h:'Protein intake trending 18% below target', b:'7-day average is 0.9 g/kg vs the 1.2 g/kg target for your current deficit phase. Continued under-shoot will accelerate lean-mass loss. Add one 25-g protein anchor to breakfast for a low-friction fix.', s:'Helms et al. 2014 · Int J Sport Nutr Exerc Metab' },
   ];
   const tEl = document.getElementById('t'), hEl = document.getElementById('h'),
         bEl = document.getElementById('b'), sEl = document.getElementById('s');
