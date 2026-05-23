@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jofit — ML wellness coach · Amplified Labs</title>
+<meta name="description" content="Editorial-dark preview of Jofit, a fitness & wellness app that turns water intake, training load and clinical-study evidence into tiered daily suggestions.">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --bg:#0E0E0C;
+    --surface:#17171A;
+    --surface-2:#1F1F22;
+    --surface-3:#26262A;
+    --ink:#FFFFFF;
+    --ink-soft:rgba(255,255,255,.62);
+    --ink-faint:rgba(255,255,255,.4);
+    --line:rgba(255,255,255,.08);
+    --line-strong:rgba(255,255,255,.14);
+    --lime:#D7FF3A;
+    --lime-deep:#B8E72E;
+    --lime-soft:rgba(215,255,58,.16);
+    --on-lime:#0E0E0C;
+    --cream:#F3F0E6;
+    --on-cream:#0E0E0C;
+    --tier-urgente:#FF6B5B;
+    --tier-imp:#FFB05B;
+    --tier-avaliar:#F5E96B;
+    --tier-vigiar:#9AD0FF;
+    --tier-opc:rgba(255,255,255,.5);
+  }
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Inter",ui-sans-serif,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .display{font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,sans-serif;letter-spacing:-.02em;font-weight:700;line-height:1.02}
+  .mono{font-family:ui-monospace,"JetBrains Mono",SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+  header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:48px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);box-shadow:0 0 18px var(--lime-soft)}
+  .brand small{color:var(--ink-faint);font-weight:400;margin-left:6px}
+  .top a{color:var(--ink-soft);text-decoration:none;font-size:13px}
+  .top a:hover{color:var(--lime)}
+
+  /* HERO */
+  .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:48px;align-items:end;padding-bottom:48px;border-bottom:1px solid var(--line)}
+  .hero h1{font-size:clamp(40px,6.5vw,82px);margin:18px 0 14px}
+  .hero h1 em{font-style:normal;color:var(--lime)}
+  .hero p.lede{color:var(--ink-soft);font-size:17px;max-width:48ch;margin:0 0 22px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border:1px solid var(--line-strong);border-radius:99px;color:var(--ink-soft)}
+  .hero-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px}
+  .ring{position:relative;width:160px;height:160px;margin:6px auto 0}
+  .ring svg{transform:rotate(-90deg)}
+  .ring-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-num .big{font-size:34px;font-weight:700;font-family:"Inter Tight",system-ui;letter-spacing:-.02em}
+  .ring-num .lbl{font-size:11px;color:var(--ink-faint);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+  @media(max-width:820px){.hero{grid-template-columns:1fr;gap:32px}}
+
+  /* SECTION GRID */
+  section.dash{display:grid;grid-template-columns:repeat(12,1fr);gap:18px;margin-top:48px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px}
+  .card h3{margin:0 0 4px;font-size:18px;font-family:"Inter Tight",system-ui;font-weight:600;letter-spacing:-.01em}
+  .card p.k{color:var(--ink-faint);font-size:12px;margin:0 0 16px;letter-spacing:.08em;text-transform:uppercase}
+  .c-water{grid-column:span 4}
+  .c-kcal{grid-column:span 4}
+  .c-train{grid-column:span 4}
+  .c-chart{grid-column:span 7}
+  .c-insight{grid-column:span 5}
+  .c-supp{grid-column:span 12}
+  @media(max-width:980px){.c-water,.c-kcal,.c-train{grid-column:span 6}.c-chart,.c-insight{grid-column:span 12}}
+  @media(max-width:620px){.c-water,.c-kcal,.c-train{grid-column:span 12}}
+
+  /* WATER */
+  .water-row{display:flex;gap:6px;margin-top:6px}
+  .glass{flex:1;aspect-ratio:1/1.6;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface-2);position:relative;overflow:hidden;cursor:pointer;transition:transform .15s}
+  .glass:hover{transform:translateY(-2px)}
+  .glass.full{background:linear-gradient(180deg,var(--surface-2) 0%,var(--surface-2) 25%,#5DD0FF 25%,#3aa8e0 100%);border-color:rgba(93,208,255,.3)}
+  .water-meta{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;font-size:13px;color:var(--ink-soft)}
+  .water-meta strong{color:var(--ink);font-size:20px;font-family:"Inter Tight",system-ui}
+
+  /* KCAL */
+  .kcal-num{font-size:54px;font-family:"Inter Tight",system-ui;font-weight:700;letter-spacing:-.03em;line-height:1;margin:8px 0 4px}
+  .kcal-num span{color:var(--lime)}
+  .kcal-sub{color:var(--ink-faint);font-size:13px}
+  .bar{height:8px;background:var(--surface-2);border-radius:4px;margin-top:18px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime) 0%,var(--lime-deep) 100%);border-radius:4px;width:72%}
+
+  /* TRAINING */
+  .train-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .train-list li{list-style:none;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface-2);border-radius:10px;font-size:13px}
+  .train-list li .name{color:var(--ink-soft)}
+  .train-list li .val{font-family:"Inter Tight",system-ui;font-weight:600}
+  .train-list li.done .name{color:var(--ink);text-decoration:line-through;text-decoration-color:var(--lime);text-decoration-thickness:2px}
+
+  /* CHART */
+  .chart-wrap{margin-top:6px;position:relative}
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--ink-soft);letter-spacing:.08em;text-transform:uppercase;margin-top:10px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .leg-l{background:var(--lime)}
+  .leg-c{background:var(--cream)}
+
+  /* INSIGHT */
+  .insight{display:flex;flex-direction:column;gap:12px}
+  .tier{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:4px 9px;border-radius:99px;background:var(--surface-3);color:var(--ink)}
+  .tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .tier.URGENTE{color:var(--tier-urgente);background:rgba(255,107,91,.12)}
+  .tier.IMP{color:var(--tier-imp);background:rgba(255,176,91,.12)}
+  .tier.AVALIAR{color:var(--tier-avaliar);background:rgba(245,233,107,.12)}
+  .tier.VIGIAR{color:var(--tier-vigiar);background:rgba(154,208,255,.12)}
+  .insight h4{margin:4px 0 2px;font-family:"Inter Tight",system-ui;font-weight:600;font-size:17px;letter-spacing:-.01em}
+  .insight p{margin:0;font-size:14px;color:var(--ink-soft)}
+  .source{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-faint);margin-top:6px;letter-spacing:.04em}
+  .source::before{content:"📑";filter:grayscale(1) opacity(.6)}
+  .insight-nav{display:flex;gap:4px;margin-top:10px}
+  .insight-nav button{flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-soft);padding:8px;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;transition:.15s}
+  .insight-nav button:hover,.insight-nav button.active{background:var(--lime-soft);color:var(--lime);border-color:var(--lime)}
+
+  /* SUPPLEMENTS */
+  .supp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:6px}
+  .supp{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .supp h5{margin:6px 0 2px;font-family:"Inter Tight",system-ui;font-weight:600;font-size:14px}
+  .supp .dose{font-size:12px;color:var(--ink-soft)}
+  .supp .lab{font-size:11px;color:var(--ink-faint);margin-top:6px;font-family:ui-monospace,monospace}
+
+  /* ABOUT */
+  .about{margin-top:64px;display:grid;grid-template-columns:1fr 1fr;gap:32px;padding-top:48px;border-top:1px solid var(--line)}
+  .about h2{font-family:"Inter Tight",system-ui;font-size:28px;font-weight:600;letter-spacing:-.01em;margin:0 0 14px}
+  .about p{color:var(--ink-soft);font-size:15px;margin:0 0 12px}
+  .about ul{margin:8px 0 0;padding:0;list-style:none}
+  .about li{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink-soft);display:flex;justify-content:space-between;gap:14px}
+  .about li:last-child{border-bottom:0}
+  .about li strong{color:var(--ink);font-weight:500}
+  @media(max-width:760px){.about{grid-template-columns:1fr;gap:18px}}
+
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  footer a{color:var(--lime);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+
+  /* disclaimer */
+  .note{margin-top:18px;padding:12px 14px;border:1px dashed var(--line-strong);border-radius:10px;color:var(--ink-faint);font-size:12px;line-height:1.55}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand"><span class="dot"></span>jofit<small>— wellness coach preview</small></div>
+    <a href="https://amplifiedcreations.com/lab">← Amplified Labs</a>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <div class="mono">— PREVIEW · ML WELLNESS COACH</div>
+      <h1 class="display">Water, training,<br>blood-work <em>→</em> one daily move.</h1>
+      <p class="lede">Jofit ingests water intake, workout load, kilocalories burned and lab analytics. A model trained on weight-loss and metabolic-health literature returns a ranked list of suggestions — each tagged by urgency tier and linked back to its source paper.</p>
+      <div class="badges">
+        <span class="badge">Next.js</span>
+        <span class="badge">PWA</span>
+        <span class="badge">ML</span>
+        <span class="badge">Recharts</span>
+        <span class="badge">Drizzle</span>
+        <span class="badge">Editorial Dark</span>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="mono">— TODAY · 23 MAY</div>
+      <div class="ring" aria-label="Daily adherence ring 72 percent">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="68" stroke="rgba(255,255,255,.08)" stroke-width="14" fill="none"/>
+          <circle cx="80" cy="80" r="68" stroke="#D7FF3A" stroke-width="14" fill="none"
+                  stroke-linecap="round"
+                  stroke-dasharray="427"
+                  stroke-dashoffset="119"/>
+        </svg>
+        <div class="ring-num"><div class="big tnum">72%</div><div class="lbl">Adherence</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-faint);letter-spacing:.06em">
+        <span>HYDRATION ✓</span><span>TRAINING ✓</span><span>SUPP ✗</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="dash">
+
+    <!-- WATER -->
+    <div class="card c-water">
+      <p class="k">— Hydration</p>
+      <h3>Water · 6 of 8</h3>
+      <div class="water-row" id="waterRow">
+        <div class="glass full"></div><div class="glass full"></div><div class="glass full"></div>
+        <div class="glass full"></div><div class="glass full"></div><div class="glass full"></div>
+        <div class="glass"></div><div class="glass"></div>
+      </div>
+      <div class="water-meta">
+        <span><strong class="tnum">1.5L</strong> &nbsp;/ 2.0L target</span>
+        <span>last @ 16:42</span>
+      </div>
+      <div class="note">Click a glass to log. Target derived from weight × activity × ambient temperature.</div>
+    </div>
+
+    <!-- KCAL -->
+    <div class="card c-kcal">
+      <p class="k">— Energy balance</p>
+      <h3>Kilocalories</h3>
+      <div class="kcal-num tnum">−<span>412</span></div>
+      <div class="kcal-sub">Burned 2,184 · Intake 1,772</div>
+      <div class="bar" aria-label="Daily deficit progress"><i></i></div>
+      <div class="water-meta">
+        <span>Deficit goal 500 kcal</span>
+        <span>72% reached</span>
+      </div>
+    </div>
+
+    <!-- TRAINING -->
+    <div class="card c-train">
+      <p class="k">— Training</p>
+      <h3>Today's session</h3>
+      <ul class="train-list">
+        <li class="done"><span class="name">Walk · 7 200 steps</span><span class="val tnum">8.1 km</span></li>
+        <li class="done"><span class="name">Mobility · hips + spine</span><span class="val tnum">12 min</span></li>
+        <li><span class="name">Strength · push day</span><span class="val tnum">— </span></li>
+      </ul>
+    </div>
+
+    <!-- CHART -->
+    <div class="card c-chart">
+      <p class="k">— 7-day load</p>
+      <h3>Energy in vs out</h3>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 700 240" width="100%" height="240" role="img" aria-label="Weekly intake versus burn chart">
+          <!-- grid -->
+          <g stroke="rgba(255,255,255,.06)" stroke-width="1">
+            <line x1="0" y1="40"  x2="700" y2="40"/>
+            <line x1="0" y1="100" x2="700" y2="100"/>
+            <line x1="0" y1="160" x2="700" y2="160"/>
+            <line x1="0" y1="220" x2="700" y2="220"/>
+          </g>
+          <!-- bars (intake = cream, burn = lime) -->
+          <g>
+            <!-- mon -->
+            <rect x="30"  y="120" width="22" height="100" fill="#F3F0E6" rx="3"/>
+            <rect x="55"  y="90"  width="22" height="130" fill="#D7FF3A" rx="3"/>
+            <!-- tue -->
+            <rect x="120" y="100" width="22" height="120" fill="#F3F0E6" rx="3"/>
+            <rect x="145" y="70"  width="22" height="150" fill="#D7FF3A" rx="3"/>
+            <!-- wed -->
+            <rect x="210" y="130" width="22" height="90"  fill="#F3F0E6" rx="3"/>
+            <rect x="235" y="110" width="22" height="110" fill="#D7FF3A" rx="3"/>
+            <!-- thu -->
+            <rect x="300" y="80"  width="22" height="140" fill="#F3F0E6" rx="3"/>
+            <rect x="325" y="60"  width="22" height="160" fill="#D7FF3A" rx="3"/>
+            <!-- fri -->
+            <rect x="390" y="110" width="22" height="110" fill="#F3F0E6" rx="3"/>
+            <rect x="415" y="80"  width="22" height="140" fill="#D7FF3A" rx="3"/>
+            <!-- sat -->
+            <rect x="480" y="70"  width="22" height="150" fill="#F3F0E6" rx="3"/>
+            <rect x="505" y="100" width="22" height="120" fill="#D7FF3A" rx="3"/>
+            <!-- sun -->
+            <rect x="570" y="115" width="22" height="105" fill="#F3F0E6" rx="3"/>
+            <rect x="595" y="95"  width="22" height="125" fill="#D7FF3A" rx="3"/>
+          </g>
+          <!-- labels -->
+          <g fill="rgba(255,255,255,.4)" font-family="ui-monospace,monospace" font-size="10" letter-spacing=".08em">
+            <text x="42"  y="234">MON</text>
+            <text x="132" y="234">TUE</text>
+            <text x="222" y="234">WED</text>
+            <text x="312" y="234">THU</text>
+            <text x="402" y="234">FRI</text>
+            <text x="492" y="234">SAT</text>
+            <text x="582" y="234">SUN</text>
+          </g>
+        </svg>
+        <div class="legend"><span><i class="leg-c"></i>Intake</span><span><i class="leg-l"></i>Burn</span></div>
+      </div>
+    </div>
+
+    <!-- INSIGHT -->
+    <div class="card c-insight">
+      <p class="k">— JAI · today's nudge</p>
+      <div class="insight" id="insight">
+        <span class="tier IMP" id="t">IMP</span>
+        <h4 id="h">Push magnesium to 350 mg before bed</h4>
+        <p id="b">Your last panel showed Mg 0.78 mg/dL (range 1.9–2.5) and you reported 4 nights of broken sleep this week. Glycinate form, taken 60 min before sleep, improves sleep architecture in adults with sub-clinical deficiency.</p>
+        <span class="source" id="s">Abbasi et al. 2012 · J Res Med Sci · n=46</span>
+      </div>
+      <div class="insight-nav" id="nav">
+        <button data-i="0" class="active">01</button>
+        <button data-i="1">02</button>
+        <button data-i="2">03</button>
+        <button data-i="3">04</button>
+      </div>
+    </div>
+
+    <!-- SUPPLEMENTS -->
+    <div class="card c-supp">
+      <p class="k">— Stack · derived from last blood panel</p>
+      <h3 style="margin-bottom:14px">Supplements</h3>
+      <div class="supp-grid">
+        <div class="supp"><span class="tier URGENTE">URGENTE</span><h5>Vitamin D3 + K2</h5><div class="dose">4 000–10 000 IU · with dinner</div><div class="lab">10.11 ng/mL (30–100)</div></div>
+        <div class="supp"><span class="tier IMP">IMP</span><h5>Magnesium glycinate</h5><div class="dose">200–400 mg · pre-sleep</div><div class="lab">0.78 mg/dL (1.9–2.5)</div></div>
+        <div class="supp"><span class="tier AVALIAR">AVALIAR</span><h5>Iron + Vit C</h5><div class="dose">Confirm with GP</div><div class="lab">22.2 µmol/L (47.4–69)</div></div>
+        <div class="supp"><span class="tier VIGIAR">VIGIAR</span><h5>Vitamin B12</h5><div class="dose">1 000 µg / week</div><div class="lab">297 pg/mL (180–914)</div></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about">
+    <div>
+      <h2>How the model decides.</h2>
+      <p>The ranker isn't a chatbot. It's a small ensemble that scores each candidate intervention (hydration, sleep, supplement, training swap, meal swap) against three axes:</p>
+      <ul>
+        <li><strong>Evidence weight</strong><span>RCT &gt; cohort &gt; case</span></li>
+        <li><strong>Personal delta</strong><span>distance from clinical target</span></li>
+        <li><strong>Adherence cost</strong><span>friction × habit history</span></li>
+      </ul>
+      <p style="margin-top:14px">Top suggestion surfaces as today's nudge. Anything URGENTE bypasses the queue and always shows first.</p>
+    </div>
+    <div>
+      <h2>Why editorial dark.</h2>
+      <p>Most wellness apps look like neon dashboards. We wanted something closer to a notebook a clinician could hand back to a patient — quiet surfaces, one accent colour, tabular numerals, no animation noise. The lime is reserved for adherence and confirmation.</p>
+      <ul>
+        <li><strong>Surfaces</strong><span>3 elevations · 1 line tone</span></li>
+        <li><strong>Type</strong><span>Inter · Inter Tight display</span></li>
+        <li><strong>Accent</strong><span>lime #D7FF3A · single use</span></li>
+        <li><strong>Tier palette</strong><span>5 colours · semantic only</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span>Preview only — not medical advice. Built by <a href="https://amplifiedcreations.com">Amplified Creations</a>.</span>
+    <span>MIT · <a href="https://github.com/PTthe13/amplifiedlabs/tree/main/jofit">source</a></span>
+  </footer>
+</div>
+
+<script>
+  // Glass click toggle
+  document.getElementById('waterRow').addEventListener('click', e => {
+    const g = e.target.closest('.glass');
+    if (g) g.classList.toggle('full');
+  });
+
+  // Insight carousel
+  const insights = [
+    { t:'IMP',     h:'Push magnesium to 350 mg before bed', b:'Your last panel showed Mg 0.78 mg/dL (range 1.9–2.5) and you reported 4 nights of broken sleep this week. Glycinate form, taken 60 min before sleep, improves sleep architecture in adults with sub-clinical deficiency.', s:'Abbasi et al. 2012 · J Res Med Sci · n=46' },
+    { t:'URGENTE', h:'Vitamin D is 3× below target — start today', b:'Serum 25-OH-D at 10.11 ng/mL puts you in the severe-deficiency band. Bone, immune and insulin pathways all suffer. Start 4 000 IU D3 with the largest fat-containing meal; K2-MK7 in parallel to direct calcium to bone, not arteries.', s:'Holick et al. 2011 · J Clin Endo Metab · meta-analysis' },
+    { t:'AVALIAR', h:'Swap morning espresso further from iron', b:'Coffee polyphenols block up to 40% of non-heme iron absorption when consumed within 60 min of a meal. Your transferrin saturation is borderline — move the espresso to +90 min after breakfast to recover roughly 0.6 mg/day intake.', s:'Morck et al. 1983 · Am J Clin Nutr' },
+    { t:'VIGIAR',  h:'Protein intake trending 18% below target', b:'7-day average is 0.9 g/kg vs the 1.2 g/kg target for your current deficit phase. Continued under-shoot will accelerate lean-mass loss. Add one 25-g protein anchor to breakfast for a low-friction fix.', s:'Helms et al. 2014 · Int J Sport Nutr Exerc Metab' },
+  ];
+  const tEl = document.getElementById('t'), hEl = document.getElementById('h'),
+        bEl = document.getElementById('b'), sEl = document.getElementById('s');
+  document.getElementById('nav').addEventListener('click', e => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const d = insights[+btn.dataset.i];
+    tEl.className = 'tier ' + d.t; tEl.textContent = d.t;
+    hEl.textContent = d.h; bEl.textContent = d.b; sEl.textContent = d.s;
+  });
+</script>
+</body>
+</html>
