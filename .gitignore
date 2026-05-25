@@ -16,6 +16,7 @@ yarn-error.log*
 
 # Build / dist
 dist/
+!presend/dist/
 build/
 .cache/
 

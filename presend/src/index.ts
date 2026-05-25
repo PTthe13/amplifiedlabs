@@ -1,17 +1,15 @@
 #!/usr/bin/env node
-import "dotenv/config";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { analyze, formatAnalysis, rewrite } from "./checker.js";
+import { buildCheckInstruction, buildFixInstruction } from "./checker.js";
 import {
   listProfiles,
   upsertProfile,
   deleteProfile,
-  getProfile,
   formatProfileList,
 } from "./profiles.js";
 import { Mode, MODES } from "./modes.js";
@@ -131,9 +129,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         if (!MODE_VALUES.includes(mode)) return errorResult(`mode must be one of: ${MODE_VALUES.join(", ")}`);
         const ctx = args.context ? String(args.context) : undefined;
         const pid = args.profile_id ? String(args.profile_id) : undefined;
-        const analysis = await analyze({ text, mode, context: ctx, profile_id: pid });
-        const profile = pid ? getProfile(pid) : undefined;
-        return textResult(formatAnalysis(analysis, mode, profile));
+        return textResult(buildCheckInstruction({ text, mode, context: ctx, profile_id: pid }));
       }
       case "fix_message": {
         const text = String(args.text ?? "");
@@ -143,8 +139,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         if (!MODE_VALUES.includes(mode)) return errorResult(`mode must be one of: ${MODE_VALUES.join(", ")}`);
         const ctx = args.context ? String(args.context) : undefined;
         const pid = args.profile_id ? String(args.profile_id) : undefined;
-        const fixed = await rewrite({ text, flags, mode, context: ctx, profile_id: pid });
-        return textResult(fixed);
+        return textResult(buildFixInstruction({ text, flags, mode, context: ctx, profile_id: pid }));
       }
       case "save_profile": {
         const id = String(args.id ?? "");

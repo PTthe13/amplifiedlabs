@@ -1,29 +1,23 @@
-import { Mode, modeRules, modeLabel } from "./modes.js";
-import { Profile, getProfile } from "./profiles.js";
-
-function profileBlock(profile?: Profile): string {
-  if (!profile) return "";
-  return `\n\nRECIPIENT/PROFILE CONTEXT (id=${profile.id}, name=${profile.name}${profile.language ? `, lang=${profile.language}` : ""}):\n${profile.description}`;
+import { modeRules, modeLabel } from "./modes.js";
+import { getProfile } from "./profiles.js";
+function profileBlock(profile) {
+    if (!profile)
+        return "";
+    return `\n\nRECIPIENT/PROFILE CONTEXT (id=${profile.id}, name=${profile.name}${profile.language ? `, lang=${profile.language}` : ""}):\n${profile.description}`;
 }
-
-function contextBlock(ctx?: string): string {
-  if (!ctx) return "";
-  return `\n\nADDITIONAL CONTEXT:\n${ctx}`;
+function contextBlock(ctx) {
+    if (!ctx)
+        return "";
+    return `\n\nADDITIONAL CONTEXT:\n${ctx}`;
 }
-
 /**
  * Build the analysis instruction. The MCP server returns this text; the host
  * LLM (the model the user is talking to) reads it on its next turn and
  * performs the analysis inline. No sampling, no separate API calls.
  */
-export function buildCheckInstruction(input: {
-  text: string;
-  mode: Mode;
-  context?: string;
-  profile_id?: string;
-}): string {
-  const profile = input.profile_id ? getProfile(input.profile_id) : undefined;
-  const header = `[presend] Analyze the message below before the user sends it.
+export function buildCheckInstruction(input) {
+    const profile = input.profile_id ? getProfile(input.profile_id) : undefined;
+    const header = `[presend] Analyze the message below before the user sends it.
 
 Mode: ${modeLabel(input.mode)}
 
@@ -53,18 +47,11 @@ Use 🔴 for red, 🟡 for yellow, ✅ for green. Flag codes UPPER_SNAKE_CASE in
 === MESSAGE TO ANALYZE ===
 ${input.text}
 === END MESSAGE ===`;
-  return header;
+    return header;
 }
-
-export function buildFixInstruction(input: {
-  text: string;
-  flags: string;
-  mode: Mode;
-  context?: string;
-  profile_id?: string;
-}): string {
-  const profile = input.profile_id ? getProfile(input.profile_id) : undefined;
-  return `[presend] Rewrite the message below applying the flags.
+export function buildFixInstruction(input) {
+    const profile = input.profile_id ? getProfile(input.profile_id) : undefined;
+    return `[presend] Rewrite the message below applying the flags.
 
 Mode: ${modeLabel(input.mode)}
 

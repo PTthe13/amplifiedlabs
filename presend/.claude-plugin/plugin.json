@@ -1,0 +1,13 @@
+{
+  "name": "presend",
+  "version": "0.1.0",
+  "description": "Should-I-send-this checker. Scores drafts, flags risky phrasing, offers rewrites. Modes for email, LinkedIn, proposals, feedback.",
+  "author": {
+    "name": "Amplified Creations",
+    "url": "https://amplifiedcreations.com"
+  },
+  "homepage": "https://github.com/PTthe13/amplifiedlabs/tree/main/presend",
+  "repository": "https://github.com/PTthe13/amplifiedlabs",
+  "license": "MIT",
+  "keywords": ["mcp", "communication", "writing", "review"]
+}

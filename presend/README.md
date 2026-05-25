@@ -1,37 +1,72 @@
 # presend
 
-An MCP server that answers "should I send this?" before you hit send. Scores a message, flags risky phrasing, and offers a rewrite. Works on emails, LinkedIn posts, proposals, and performance feedback.
+A "should I send this?" checker, shipped as an MCP server.
 
-## Stack
+Paste a draft email / LinkedIn post / proposal / feedback note. presend grades it 0–10, flags risky phrasing (implied commitments, vague timeframes, off-tone, bias, oversharing…), and — on request — rewrites it. Optional per-recipient profiles let you grade against a real person's wiring instead of a generic ideal.
 
-TypeScript · @modelcontextprotocol/sdk · @anthropic-ai/sdk · stdio transport
+## What it does
+
+Five MCP tools:
+
+| Tool | What it does |
+|---|---|
+| `check_message` | Score a draft. Returns a markdown table of red/yellow/green flags + one-line summary. |
+| `fix_message` | Rewrite the draft applying the flags from `check_message`. |
+| `save_profile` | Save a recipient profile (boss, client, partner) and their communication preferences. |
+| `list_profiles` | Show saved profiles. |
+| `delete_profile` | Remove a saved profile by id. |
+
+**Modes:** `email`, `linkedin`, `proposal`, `feedback`, `general`. Each mode applies its own checklist (e.g. email mode looks for implied commitments and vague timeframes; feedback mode looks for bias and unactionable critique; proposal mode looks for risk language and missing sections).
+
+**Profiles** live at `~/.presend/profiles.json`. A profile carries a free-text description of how a specific recipient prefers to be communicated with — direct/diplomatic, bullets/prose, formal/casual, sensitivities — plus a default language. Pass `profile_id` to `check_message`/`fix_message` to grade against that person rather than a generic ideal.
+
+**Languages.** presend auto-detects the language of your draft and responds in that language. Mixed-language drafts (e.g. PT + EN) get flagged.
+
+### How it works
+
+presend is an MCP server, but it does **not** call an LLM itself. Each tool returns a structured instruction block that the host LLM (the model you're talking to) executes in its very next turn. No API keys, no sampling, no outbound network calls from the server. The MCP client doesn't even need to support `sampling/createMessage`.
+
+This means presend works with any MCP-compatible host — Claude Code, Claude Desktop, Cursor, Cline, etc. — as long as the host model is capable of following instructions and rendering markdown.
 
 ## Prerequisites
 
 - Node.js 18+
-- An Anthropic API key
+- An MCP-compatible client (Claude Code, Claude Desktop, Cursor, Cline, …)
 
 ## Install
 
-```bash
-npx presend
-```
+### Option A — Claude Code (CLI), via `claude mcp add`
 
-or globally:
+The simplest path on Claude Code. From anywhere:
 
 ```bash
-npm install -g presend
+git clone https://github.com/PTthe13/amplifiedlabs.git
+cd amplifiedlabs/presend
+npm install
+npm run build
+
+claude mcp add presend node "$(pwd)/dist/index.js"
 ```
 
-## Configure
+Restart your Claude Code session. The five `mcp__presend__*` tools appear.
 
-Set `ANTHROPIC_API_KEY` in your environment, or drop it in a `.env` next to the install:
+### Option B — Claude Code plugin (local marketplace)
 
-```env
-ANTHROPIC_API_KEY=sk-ant-...
+This folder ships with `.claude-plugin/plugin.json` and `.mcp.json`, so it can be added as a local marketplace and installed by name:
+
+```bash
+# from inside Claude Code
+/plugin marketplace add /absolute/path/to/amplifiedlabs
+/plugin install presend
 ```
 
-## Claude Desktop config
+Or install directly from the folder:
+
+```bash
+/plugin install /absolute/path/to/amplifiedlabs/presend
+```
+
+### Option C — Claude Desktop config
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or the equivalent on your platform:
 
@@ -39,11 +74,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 {
   "mcpServers": {
     "presend": {
-      "command": "npx",
-      "args": ["presend"],
-      "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-..."
-      }
+      "command": "node",
+      "args": ["/absolute/path/to/amplifiedlabs/presend/dist/index.js"]
     }
   }
 }
@@ -51,63 +83,98 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 
 Restart Claude Desktop.
 
-## Tools
+## Uninstall
 
-| Tool | What it does |
-|---|---|
-| `check_message` | Score a draft. Returns red/yellow/green flags + summary. |
-| `fix_message` | Rewrite the draft applying flags from `check_message`. |
-| `save_profile` | Save a recipient profile (boss, client) and their communication preferences. |
-| `list_profiles` | Show saved profiles. |
-| `delete_profile` | Remove a saved profile. |
+### Option A — Claude Code CLI
 
-Modes: `email`, `linkedin`, `proposal`, `feedback`, `general`.
-
-## Example
-
-> *"Check this email I'm about to send my boss: 'Hey, will sort out the Q3 report soon, don't worry.'"*
-
-```
-SCORE: 5.2/10 [Mode: Email]
-
-🔴 IMPLIED COMMITMENT — "will sort out" reads as a firm promise without a clear scope
-🟡 AMBIGUITY — "soon" gives no timeframe
-🟡 TONE — "don't worry" can read dismissive to a manager
-✅ Short and direct
-
-Risk: vague commitment to a manager. Tighten the timeframe and drop the reassurance.
-
-💡 Want a corrected version? Call: fix_message
+```bash
+claude mcp remove presend
 ```
 
-## Profiles
+### Option B — Claude Code plugin
 
-Profiles live at `~/.presend/profiles.json`. Use them to capture how a specific recipient prefers to be communicated with — direct/diplomatic, bullets/prose, formal/casual — so the checker grades against their wiring, not a generic ideal.
-
+```bash
+/plugin uninstall presend
+# optional: drop the local marketplace too
+/plugin marketplace remove amplifiedlabs
 ```
-save_profile id=boss-joao name="João (my boss)" description="Direct, dislikes long emails, prefers bullet points, sensitive to tone when stressed" language=pt
+
+### Option C — Claude Desktop
+
+Remove the `presend` entry from `claude_desktop_config.json` and restart.
+
+### Profiles cleanup (optional)
+
+Profiles live outside the repo and survive uninstall. To wipe them:
+
+```bash
+rm -rf ~/.presend
 ```
 
-Then pass `profile_id: "boss-joao"` to `check_message`.
+## Usage
+
+Once installed, just talk to your assistant:
+
+> *"Check this email before I send it. Mode: email. Profile: boss-joao."*
+> ```
+> Olá João, vou tratar do relatório Q3 em breve, não te preocupes.
+> ```
+
+Your assistant calls `check_message` and renders:
+
+**SCORE: 4.5/10** — Mode: Email → João
+
+| Level | Flag | Detail |
+|---|---|---|
+| 🔴 | DISMISSIVE_TONE | "não te preocupes" pode soar condescendente para um chefe stressado |
+| 🔴 | IMPLIED_COMMITMENT | "vou tratar" é promessa firme sem âmbito |
+| 🟡 | AMBIGUITY | "em breve" não dá prazo |
+| ✅ | BREVITY | curto, alinha com a preferência do João |
+
+**Summary:** Tom dispensa-te, prazo vago — define data e remove a tranquilização.
+
+💡 Want a corrected version? Ask: fix_message
+
+Then:
+
+> *"Apply those flags."*
+
+Your assistant calls `fix_message` and prints the rewrite.
+
+### Profile lifecycle example
+
+> *"Save a presend profile: id boss-joao, name 'João (chefe)', direct/terse style, prefers bullets, dislikes long emails, sensitive to tone when stressed, language pt."*
+> *"List my presend profiles."*
+> *"Delete the boss-joao profile."*
 
 ## Security
 
-- `.env` and `.env.*` are listed in `.claudeignore` and `.gitignore`.
-- The API key is never logged.
-- The only outbound call is to the Anthropic API.
-- Profiles are stored locally in your home directory — nothing is sent anywhere except as part of the analysis prompt.
+- No API keys handled by the server. No outbound network calls. Analysis runs inside the host LLM you're already talking to.
+- Profiles are stored locally at `~/.presend/profiles.json`. They never leave your machine except as part of the prompt your assistant generates.
+- `.env` / `.env.*` are listed in `.claudeignore` and `.gitignore` as a precaution. The server reads no env vars.
 
 ## Development
 
 ```bash
 npm install
 npm run build
-node dist/index.js   # stdio MCP server — feed it via Claude Desktop or an MCP client
+node dist/index.js   # stdio MCP server, talks JSON-RPC over stdin/stdout
 ```
+
+To iterate locally:
+
+```bash
+npm run dev          # tsc --watch
+pkill -f "presend/dist/index.js"   # force MCP client to respawn with new dist
+```
+
+## Stack
+
+TypeScript · `@modelcontextprotocol/sdk` · stdio transport · zero deps beyond MCP.
 
 ## Status
 
-🧪 Lab experiment. Used internally before published replies. PRs welcome for new modes.
+🧪 Lab experiment. Used internally before sending tricky replies. PRs welcome for new modes and check categories.
 
 ## License
 
