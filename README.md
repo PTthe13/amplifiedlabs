@@ -18,6 +18,7 @@ Each folder is a self-contained piece — generative art, shaders, utility scrip
 | [`responsive-type-scale`](./responsive-type-scale) | Fluid modular type scale using CSS `clamp()`. Pick base + ratio, get h1–h6 + body ladder. | HTML · CSS · clamp() |
 | [`webxr-lost-room`](./webxr-lost-room) | A small 3D room that exists between dimensions — floating orbs, glowing obelisk, orbital ring, drift fog. Inline 3D for any browser, headset opt-in via WebXR. | Three.js · WebXR · importmap |
 | [`jofit`](./jofit) | Editorial-dark preview of a fitness & wellness coach: hydration, energy balance, training load, weekly chart, and an ML nudge ranked by clinical-evidence weight × personal delta × adherence cost. | HTML · CSS · SVG · vanilla JS |
+| [`presend`](./presend) | MCP server that answers "should I send this?" before you hit send. Scores a draft, flags risky phrasing (implied commitments, vague timeframes, off-tone), and offers a rewrite. Modes for email, LinkedIn, proposals, feedback. | TypeScript · MCP SDK · Anthropic SDK |
 
 ## Running
 
