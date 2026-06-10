@@ -29,6 +29,6 @@ Open `index.html` in a browser. That's it.
 | `data.js` | 48 teams, Elo snapshot, groups, full bracket structure |
 | `sim.js` | match model + tournament engine + aggregator |
 | `app.js` | chunked sim loop, table/groups/trajectory rendering |
-| `style.css` | Amplified Labs house style — paper, white cards, brand orange, Instrument Serif accents |
+| `style.css` | Amplified Creations house style — paper, white cards, brand orange, Instrument Serif accents |
 
 MIT, like everything in this repo.
