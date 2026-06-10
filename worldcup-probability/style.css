@@ -40,11 +40,11 @@ header { animation: rise .5s ease both; }
   color: var(--dim); margin: 0 0 10px;
   display: flex; align-items: center; gap: 8px;
 }
-.wordmark { height: 15px; width: auto; display: block; }
+.wordmark { height: 22px; width: auto; display: block; }
 .wordmark-link { display: inline-flex; align-items: center; }
 .wordmark-link:hover { opacity: .75; }
 .made-by { display: inline-flex; align-items: center; gap: 6px; }
-footer .wordmark { height: 12px; }
+footer .wordmark { height: 18px; }
 h1 {
   font-size: clamp(28px, 4vw, 42px);
   line-height: 1.05; letter-spacing: -.02em;
