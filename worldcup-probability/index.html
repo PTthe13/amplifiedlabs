@@ -38,8 +38,16 @@
         <option value="1000000">1,000,000 tournaments</option>
       </select>
       <button id="run" class="btn">Run simulation</button>
-      <label class="momentum-wrap" title="Normally a team is exactly as strong at the end of the tournament as at the start. With momentum on, teams that keep winning play with growing confidence, and teams that struggle lose some of theirs — the way a real tournament can carry an underdog all the way. Surprise runs become a little more likely.">
-        <input type="checkbox" id="momentum"> momentum
+      <label class="momentum-wrap">
+        <span class="switch">
+          <input type="checkbox" id="momentum">
+          <i aria-hidden="true"></i>
+        </span>
+        momentum
+        <span class="balloon" role="tooltip">Normally a team is exactly as strong at the end of the
+        tournament as at the start. With momentum on, teams that keep winning play with growing
+        confidence, and teams that struggle lose some of theirs — the way a real tournament can
+        carry an underdog all the way. Surprise runs become a little more likely.</span>
       </label>
       <span class="counter-wrap">universes simulated: <span id="counter">0</span></span>
     </div>
