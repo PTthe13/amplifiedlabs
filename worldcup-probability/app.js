@@ -230,10 +230,14 @@ function survivalSVG(t) {
 /* ---- exit profile (#10) ---- */
 function exitProfileHTML(t) {
   if (!agg.runs) return '';
+  // what-if run overrides the baseline numbers when the slider is active
+  const prob = adjusted && adjusted.runs
+    ? k => (adjusted.stage[t.id]?.[k] || 0) / adjusted.runs
+    : k => agg.prob(t.id, k);
   const labels = ['Out in group', 'Out in R32', 'Out in R16', 'Out in QF', 'Out in SF', 'Lose final', 'Champions'];
   const ps = [];
-  for (let k = 0; k < 6; k++) ps.push(agg.prob(t.id, k) - agg.prob(t.id, k + 1));
-  ps.push(agg.prob(t.id, 6));
+  for (let k = 0; k < 6; k++) ps.push(prob(k) - prob(k + 1));
+  ps.push(prob(6));
   const max = Math.max(...ps, 0.0001);
   const mode = ps.indexOf(Math.max(...ps));
   return `<div class="exit-profile">
@@ -479,6 +483,12 @@ function refreshDrawerBody(t) {
   const sv = $('#survival-box');
   if (sv) sv.innerHTML = survivalSVG(t) + (adjusted
     ? `<p class="adj-legend"><span class="sw base"></span> baseline · <span class="sw adj"></span> with ${drawerEloDelta > 0 ? '+' : ''}${drawerEloDelta} Elo (20k-run what-if)</p>` : '');
+  const ex = $('#exit-box');
+  if (ex) ex.innerHTML = exitProfileHTML(t);
+  const exSub = $('#exit-sub');
+  if (exSub) exSub.textContent = adjusted
+    ? `what-if run — with ${drawerEloDelta > 0 ? '+' : ''}${drawerEloDelta} Elo`
+    : 'share of simulated universes per exit stage — most common highlighted';
 }
 
 function renderDrawer() {
@@ -504,8 +514,8 @@ function renderDrawer() {
     ${qualScenariosHTML(t)}
     <h4>Survival curve <span class="sub">probability of reaching each stage, ${agg.runs.toLocaleString()} simulations</span></h4>
     <div id="survival-box"></div>
-    <h4>Where the run ends <span class="sub">share of simulated universes per exit stage — most common highlighted</span></h4>
-    ${exitProfileHTML(t)}
+    <h4>Where the run ends <span class="sub" id="exit-sub">share of simulated universes per exit stage — most common highlighted</span></h4>
+    <div id="exit-box">${exitProfileHTML(t)}</div>
     <h4>What if they were stronger? <span class="sub">drag to adjust ${t.name}'s Elo and re-simulate</span></h4>
     <div class="whatif">
       <input type="range" id="elo-delta" min="-150" max="150" step="10" value="${drawerEloDelta}">
