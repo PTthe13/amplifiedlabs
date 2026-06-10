@@ -13,7 +13,12 @@
 <body>
   <div class="sheet">
     <header>
-      <p class="kicker">Amplified Creations · Probability Experiment</p>
+      <p class="kicker">
+        <a href="https://amplifiedcreations.com" target="_blank" rel="noopener" class="wordmark-link">
+          <img src="amplified-wordmark.svg" alt="amplified®" class="wordmark">
+        </a>
+        <span>· Probability Experiment</span>
+      </p>
       <h1>World Cup <em>probability.</em></h1>
       <p class="sub">An Elo + Monte Carlo simulator for the 2026 FIFA World Cup. Ten thousand tournaments run in your browser — stage probabilities for all 48 teams, survival curves, and single-universe replays. No APIs, no build step. <a href="https://github.com/PTthe13/amplifiedlabs/tree/main/worldcup-probability">Open on GitHub →</a></p>
       <p class="dateline">
@@ -33,7 +38,7 @@
         <option value="1000000">1,000,000 tournaments</option>
       </select>
       <button id="run" class="btn">Run simulation</button>
-      <label class="momentum-wrap" title="Update each team's Elo after every simulated match (K=50) — winners gather momentum within a tournament, dark horses get fatter tails.">
+      <label class="momentum-wrap" title="Normally a team is exactly as strong at the end of the tournament as at the start. With momentum on, teams that keep winning play with growing confidence, and teams that struggle lose some of theirs — the way a real tournament can carry an underdog all the way. Surprise runs become a little more likely.">
         <input type="checkbox" id="momentum"> momentum
       </label>
       <span class="counter-wrap">universes simulated: <span id="counter">0</span></span>
@@ -90,11 +95,16 @@
       Big runs fan out across your CPU cores via Web Workers — a million tournaments in seconds.
       During the tournament the page polls FIFA's public match feed every five minutes: finished matches are
       locked into every simulation, real knockout pairings override simulated standings, and the title odds
-      show their movement against the pre-tournament baseline. Momentum mode updates Elo within each simulated
-      tournament (K=50). The what-if slider re-simulates a single team at an adjusted rating.
+      show their movement against the pre-tournament baseline. Momentum mode lets confidence build within each
+      simulated tournament — winning teams get slightly stronger as they go, struggling teams slightly weaker
+      (technically: Elo is updated after every simulated match, K=50). The what-if slider re-simulates a
+      single team at an adjusted rating.
     </div>
     <footer>
-      <span>Made by <a href="https://amplifiedcreations.com">Amplified Creations</a> · MIT licensed</span>
+      <span class="made-by">Made by
+        <a href="https://amplifiedcreations.com" target="_blank" rel="noopener" class="wordmark-link">
+          <img src="amplified-wordmark.svg" alt="amplified®" class="wordmark">
+        </a> · MIT licensed</span>
       <span><a href="https://github.com/PTthe13/amplifiedlabs/tree/main/worldcup-probability">github.com/PTthe13/amplifiedlabs</a></span>
     </footer>
   </div>
