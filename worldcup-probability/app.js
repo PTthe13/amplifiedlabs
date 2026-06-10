@@ -320,4 +320,4 @@ els.scrim.addEventListener('click', closeDrawer);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && selected) closeDrawer(); });
 
 renderAll();
-runSimulations(10000);
+runSimulations(50000);
