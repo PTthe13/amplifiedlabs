@@ -154,6 +154,102 @@ function simulateTournament(withLog = false) {
   return { reached, champion: matchWinner[FINAL.id], log };
 }
 
+/* ---- deterministic "most likely path" ----
+   No dice: analytic W/D/L from the same Poisson model, groups ranked
+   by expected points, knockout slots resolved favorite-wins. */
+
+function pmf(lambda, kMax = 10) {
+  const out = [Math.exp(-lambda)];
+  for (let k = 1; k <= kMax; k++) out.push(out[k - 1] * lambda / k);
+  return out;
+}
+
+function matchProbs(a, b) { // exact W/D/L for the Poisson model
+  const [la, lb] = goalMeans(a, b);
+  const pa = pmf(la), pb = pmf(lb);
+  let pW = 0, pD = 0, pL = 0;
+  for (let i = 0; i <= 10; i++) for (let j = 0; j <= 10; j++) {
+    const p = pa[i] * pb[j];
+    if (i > j) pW += p; else if (i === j) pD += p; else pL += p;
+  }
+  return { pW, pD, pL };
+}
+
+function expectedPoints(t, group) {
+  return group.filter(o => o.id !== t.id)
+    .reduce((sum, o) => { const { pW, pD } = matchProbs(t, o); return sum + 3 * pW + pD; }, 0);
+}
+
+function deterministicPath(team) {
+  // 1. every group ranked by expected points
+  const tables = {};
+  for (const g of GROUPS) {
+    const teams = TEAMS.filter(t => t.group === g);
+    tables[g] = teams
+      .map(t => ({ t, xp: expectedPoints(t, teams) }))
+      .sort((a, b) => b.xp - a.xp || effElo(b.t) - effElo(a.t));
+  }
+  const winners = {}, runners = {};
+  GROUPS.forEach(g => { winners[g] = tables[g][0].t; runners[g] = tables[g][1].t; });
+
+  // 2. best thirds by expected points; our team forced in if needed
+  let thirds = GROUPS.map(g => ({ g, t: tables[g][2].t, xp: tables[g][2].xp }))
+    .sort((a, b) => b.xp - a.xp || effElo(b.t) - effElo(a.t));
+  const myRank = tables[team.group].findIndex(r => r.t.id === team.id);
+  let qualNote = null;
+  if (myRank >= 2) {
+    thirds = thirds.filter(x => x.g !== team.group);
+    thirds.unshift({ g: team.group, t: team, xp: tables[team.group][myRank].xp });
+    qualNote = myRank === 2
+      ? 'needs a best-third finish'
+      : 'projected 4th — path assumes they sneak through as a third';
+  }
+  const top8 = thirds.slice(0, 8);
+
+  // 3. thirds → slots (same backtracking, deterministic order)
+  const slots = R32.filter(m => m.away.t).map(m => m.id);
+  const pools = Object.fromEntries(R32.filter(m => m.away.t).map(m => [m.id, m.away.t]));
+  const used = new Set(), thirdSlot = {};
+  (function bt(i) {
+    if (i === slots.length) return true;
+    for (const cand of top8) {
+      if (used.has(cand.g) || !pools[slots[i]].includes(cand.g)) continue;
+      used.add(cand.g); thirdSlot[slots[i]] = cand.t;
+      if (bt(i + 1)) return true;
+      used.delete(cand.g); delete thirdSlot[slots[i]];
+    }
+    return false;
+  })(0);
+
+  // 4. favorite-wins occupants, our team always advances through its slot
+  const occupant = {};
+  const r32Team = (m, side) => {
+    const s = m[side];
+    return s.t ? thirdSlot[m.id] : s.w ? winners[s.w] : runners[s.r];
+  };
+  const steps = [];
+  const decide = (m, A, B) => {
+    if (!A || !B) { occupant[m.id] = A || B; return; }
+    const mine = A.id === team.id || B.id === team.id;
+    if (mine) {
+      const opp = A.id === team.id ? B : A;
+      steps.push({ matchId: m.id, opp, winProb: winExpectancy(team, opp) });
+      occupant[m.id] = team;
+    } else {
+      occupant[m.id] = effElo(A) >= effElo(B) ? A : B;
+    }
+  };
+  R32.forEach(m => decide(m, r32Team(m, 'home'), r32Team(m, 'away')));
+  [R16, QF, SF, [FINAL]].forEach(round =>
+    round.forEach(m => decide(m, occupant[m.home], occupant[m.away])));
+
+  // 5. group-stage steps (analytic) prepended
+  const groupSteps = TEAMS.filter(t => t.group === team.group && t.id !== team.id)
+    .map(o => ({ opp: o, ...matchProbs(team, o) }));
+
+  return { groupSteps, koSteps: steps, myRank, qualNote, tables };
+}
+
 /* ---- aggregation over N runs ----
    Chunked so the UI can animate the counter. */
 function createAggregator() {

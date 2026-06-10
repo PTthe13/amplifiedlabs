@@ -6,7 +6,7 @@
 
 - Simulates the full tournament match by match: group round-robins, best-third allocation, and the complete knockout bracket through the final.
 - Aggregates every run into per-team probabilities of reaching each stage (R32 → R16 → QF → SF → Final → Champion), rendered as a heat-mapped almanac table.
-- Click any team for its **trajectory**: a survival curve across stages plus a replay of one random simulated tournament — its W/D/L path, scorelines, and where the run ends.
+- Click any team for its **trajectory** in a bottom drawer: a bracket view with two modes — **Most likely path** (deterministic: expected group finish, projected opponents and win odds each round, likely exit highlighted) and **Random universe** (one simulated tournament with real scorelines) — plus a survival curve across stages.
 - Choose 1k / 10k / 50k simulations; the universe counter ticks live while it runs.
 
 ## The model

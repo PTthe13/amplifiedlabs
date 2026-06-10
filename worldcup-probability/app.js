@@ -14,7 +14,8 @@ const els = {
 
 let agg = createAggregator();
 let selected = null;
-let currentRun = null; // one simulated tournament, kept stable while drawer open
+let currentRun = null;       // one simulated tournament, kept stable while drawer open
+let drawerMode = 'likely';   // 'likely' (deterministic) | 'random' (one universe)
 
 const fmt = p => p >= 0.995 ? '>99' : p < 0.005 ? (p === 0 ? '—' : '<1') : Math.round(p * 100);
 
@@ -131,6 +132,52 @@ function bracketHTML(t) {
   return `<div class="bracket">${cols}</div><p class="exit">${exitNote}</p>`;
 }
 
+/* ---- deterministic most-likely-path bracket ---- */
+const KO_LABELS = ['Round of 32', 'Round of 16', 'Quarter-final', 'Semi-final', 'Final'];
+
+function probCard(opp, winProb, extra = '') {
+  const pct = Math.round(winProb * 100);
+  const cls = winProb >= 0.5 ? 'W' : 'L';
+  return `<div class="bk-card P ${cls} ${extra}">
+    <span class="bk-res">${pct}%</span>
+    <span class="bk-opp"><span class="flag">${opp.flag}</span>${opp.name}</span>
+    <span class="bk-score">${pct}% to win</span>
+  </div>`;
+}
+
+function likelyBracketHTML(t) {
+  const { groupSteps, koSteps, qualNote } = deterministicPath(t);
+
+  let cols = `<div class="bk-col">
+    <h5>Group ${t.group}</h5>
+    ${groupSteps.map(s => probCard(s.opp, s.pW)).join('')}
+    ${qualNote ? `<p class="bk-note">${qualNote}</p>` : ''}
+  </div>`;
+
+  let exited = false, exitStep = null, exitStage = null;
+  koSteps.forEach((s, i) => {
+    const isExit = !exited && s.winProb < 0.5;
+    if (isExit) { exited = true; exitStep = s; exitStage = KO_LABELS[i]; }
+    cols += `<div class="bk-col ${exited && !isExit ? 'ghost' : ''}">
+      <h5>${KO_LABELS[i]}</h5>
+      ${probCard(s.opp, s.winProb, `${isExit ? 'exit-here' : ''} ${exited && !isExit ? 'dimmed' : ''}`)}
+    </div>`;
+  });
+
+  const champ = !exited;
+  cols += `<div class="bk-col ${champ ? 'champ' : 'ghost'}">
+    <h5>World Champion</h5>
+    ${champ
+      ? `<div class="bk-card trophy">🏆<span class="bk-opp">${t.name}</span></div>`
+      : `<div class="bk-card ghost"><span class="bk-ghost-pct">${fmt(agg.prob(t.id, 6))}%</span><span class="bk-ghost-lbl">odds of<br>the title</span></div>`}
+  </div>`;
+
+  const note = champ
+    ? `🏆 ${t.name} are favourites in every projected round — most likely champions of this path.`
+    : `Most likely exit: ${exitStage} vs ${exitStep.opp.flag} ${exitStep.opp.name} (${Math.round(exitStep.winProb * 100)}% to advance). Later rounds show who they'd face if they survive.`;
+  return `<div class="bracket">${cols}</div><p class="exit">${note}</p>`;
+}
+
 /* ---- drawer ---- */
 function openDrawer(id) {
   selected = id;
@@ -157,16 +204,23 @@ function renderDrawer() {
       <button id="close-panel" aria-label="Close">×</button>
     </div>
     <div class="replay-head">
-      <h4>One simulated tournament <span class="sub">a single random universe — the bracket as it happened</span></h4>
-      <button id="resim" class="btn small">↻ Simulate again</button>
+      <h4>${drawerMode === 'likely'
+        ? 'Most likely path <span class="sub">deterministic — expected opponents and win odds each round</span>'
+        : 'One simulated tournament <span class="sub">a single random universe — the bracket as it happened</span>'}</h4>
+      <span class="mode-btns">
+        <button id="mode-likely" class="btn small toggle ${drawerMode === 'likely' ? 'active' : ''}">Most likely path</button>
+        <button id="mode-random" class="btn small toggle ${drawerMode === 'random' ? 'active' : ''}">${drawerMode === 'random' ? '↻ ' : ''}Random universe</button>
+      </span>
     </div>
-    <div id="bracket-box">${bracketHTML(t)}</div>
+    <div id="bracket-box">${drawerMode === 'likely' ? likelyBracketHTML(t) : bracketHTML(t)}</div>
     <h4>Survival curve <span class="sub">probability of reaching each stage, ${agg.runs.toLocaleString()} simulations</span></h4>
     ${survivalSVG(t)}`;
   $('#close-panel').onclick = closeDrawer;
-  $('#resim').onclick = () => {
-    currentRun = agg.runs ? simulateTournament(true) : null;
-    $('#bracket-box').innerHTML = bracketHTML(t);
+  $('#mode-likely').onclick = () => { drawerMode = 'likely'; renderDrawer(); };
+  $('#mode-random').onclick = () => {
+    currentRun = agg.runs ? simulateTournament(true) : null; // re-roll on every click
+    drawerMode = 'random';
+    renderDrawer();
   };
 }
 
