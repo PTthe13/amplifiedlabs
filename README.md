@@ -20,6 +20,7 @@ Each folder is a self-contained piece — generative art, shaders, utility scrip
 | [`jofit`](./jofit) | Editorial-dark preview of a fitness & wellness coach: hydration, energy balance, training load, weekly chart, and an ML nudge ranked by clinical-evidence weight × personal delta × adherence cost. | HTML · CSS · SVG · vanilla JS |
 | [`presend`](./presend) | MCP server that answers "should I send this?" before you hit send. Scores a draft, flags risky phrasing (implied commitments, vague timeframes, off-tone), and offers a rewrite. Modes for email, LinkedIn, proposals, feedback. | TypeScript · MCP SDK · Anthropic SDK |
 | [`neuron-db-graph`](./neuron-db-graph) | Database records as a 3D neuron-like brain — every node a record, every thread a relation, every pulse a synapse firing. ~500 sample records, force-directed in WebGL. Hover any node to trace its connections. | 3D-force-graph · Three.js · d3-force-3d · WebGL |
+| [`worldcup-probability`](./worldcup-probability) | The Probability Almanac: Elo + Monte Carlo simulator for the 2026 World Cup. 10,000 tournaments in your browser — stage probabilities for all 48 teams, plus per-team survival curves and single-universe replays. | HTML · CSS · SVG · vanilla JS · Poisson/Elo |
 
 ## Running
 

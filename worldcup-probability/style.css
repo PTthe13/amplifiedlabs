@@ -1,0 +1,224 @@
+/* The Probability Almanac — editorial sports-print aesthetic */
+
+:root {
+  --paper: #f4efe2;
+  --paper-deep: #ece5d3;
+  --ink: #1a1713;
+  --ink-soft: #5c5546;
+  --rule: #c9bfa8;
+  --pitch: #1d6f42;
+  --signal: #c93f1a;
+  --gold: #a87b14;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--paper);
+  background-image: radial-gradient(ellipse at 50% -10%, #fdf9ee 0%, var(--paper) 55%);
+  color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace;
+  line-height: 1.45;
+  padding: 0 1.25rem 5rem;
+}
+
+::selection { background: var(--pitch); color: var(--paper); }
+
+.sheet { max-width: 1080px; margin: 0 auto; }
+
+/* ---- masthead ---- */
+header {
+  text-align: center;
+  padding: 2.6rem 0 1.4rem;
+  border-bottom: 3px double var(--ink);
+  animation: rise 0.7s ease both;
+}
+.kicker {
+  font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 900; font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+  line-height: 1.02; letter-spacing: -0.015em;
+  margin: 0.45rem 0 0.3rem;
+}
+h1 em { font-style: italic; color: var(--pitch); }
+.dateline {
+  font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-soft);
+  display: flex; justify-content: center; gap: 1.4rem; flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+
+/* ---- controls ---- */
+.controls {
+  display: flex; align-items: baseline; justify-content: center; gap: 1rem;
+  flex-wrap: wrap; padding: 1.1rem 0;
+  border-bottom: 1px solid var(--rule);
+  animation: rise 0.7s 0.1s ease both;
+}
+.btn {
+  font: inherit; font-weight: 600;
+  background: var(--ink); color: var(--paper);
+  border: none; padding: 0.55rem 1.3rem; cursor: pointer;
+  letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.78rem;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn:hover:not(:disabled) { background: var(--pitch); transform: translateY(-1px); }
+.btn:disabled { opacity: 0.45; cursor: wait; }
+.btn.small { padding: 0.3rem 0.7rem; font-size: 0.68rem; }
+select {
+  font: inherit; font-size: 0.82rem;
+  background: transparent; border: 1px solid var(--ink);
+  padding: 0.45rem 0.6rem; cursor: pointer;
+}
+.counter-wrap { font-size: 0.78rem; color: var(--ink-soft); letter-spacing: 0.06em; }
+#counter {
+  font-family: 'Fraunces', serif; font-weight: 900; font-size: 1.5rem;
+  color: var(--signal); font-variant-numeric: tabular-nums;
+  display: inline-block; min-width: 5.2ch; text-align: right;
+}
+#counter.done { color: var(--pitch); }
+
+/* ---- section heads ---- */
+section { animation: rise 0.7s 0.2s ease both; }
+h2.rubric {
+  font-family: 'Fraunces', serif; font-weight: 900; font-size: 1.5rem;
+  margin: 2.4rem 0 0.2rem;
+}
+.rubric-sub { font-size: 0.74rem; color: var(--ink-soft); margin-bottom: 0.9rem; }
+
+/* ---- probability table ---- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+thead th {
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+  font-size: 0.62rem; color: var(--ink-soft);
+  border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink);
+  padding: 0.5rem 0.55rem; text-align: right; white-space: nowrap;
+}
+thead th:nth-child(2) { text-align: left; }
+tbody td { padding: 0.42rem 0.55rem; border-bottom: 1px solid var(--rule); }
+tbody tr { cursor: pointer; transition: background 0.12s; }
+tbody tr:hover { background: var(--paper-deep); }
+tbody tr.selected { background: var(--paper-deep); box-shadow: inset 3px 0 0 var(--pitch); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.rank { color: var(--ink-soft); font-size: 0.72rem; }
+td.team { font-weight: 600; white-space: nowrap; }
+td.elo { color: var(--ink-soft); }
+.flag { margin-right: 0.45rem; }
+.flag.big { font-size: 1.6rem; }
+.grp {
+  margin-left: 0.5rem; font-size: 0.6rem; color: var(--paper);
+  background: var(--ink-soft); padding: 0.1rem 0.32rem; border-radius: 2px;
+  vertical-align: 1px;
+}
+.heat {
+  display: inline-block; min-width: 3.2ch; padding: 0.12rem 0.34rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--signal) calc(var(--a) * 100%), transparent);
+  color: var(--ink);
+}
+tr td:last-child .heat {
+  background: color-mix(in srgb, var(--gold) calc(var(--a) * 100%), transparent);
+  font-weight: 700;
+}
+
+/* ---- groups grid ---- */
+#groups {
+  display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.group-card {
+  border: 1px solid var(--ink); padding: 0.8rem 0.9rem 0.5rem;
+  background: #faf6ea;
+  box-shadow: 4px 4px 0 var(--paper-deep);
+}
+.group-card h3 {
+  font-family: 'Fraunces', serif; font-weight: 900; font-size: 1.05rem;
+  border-bottom: 2px solid var(--ink); padding-bottom: 0.3rem; margin-bottom: 0.5rem;
+}
+.group-row {
+  display: grid; grid-template-columns: 1.4rem 1fr 56px 4ch;
+  gap: 0.4rem; align-items: center;
+  width: 100%; padding: 0.3rem 0; font: inherit; font-size: 0.74rem;
+  background: none; border: none; border-bottom: 1px dotted var(--rule);
+  cursor: pointer; text-align: left; color: inherit;
+}
+.group-row:last-child { border-bottom: none; }
+.group-row:hover .gname { color: var(--pitch); }
+.gname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar { height: 6px; background: var(--paper-deep); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--pitch); transition: width 0.4s ease; }
+.gpct { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+
+/* ---- team panel ---- */
+#team-panel { display: none; }
+#team-panel.open {
+  display: block;
+  margin-top: 2.4rem; padding: 1.4rem 1.6rem 1.8rem;
+  border: 2px solid var(--ink); background: #faf6ea;
+  box-shadow: 7px 7px 0 var(--paper-deep);
+  animation: rise 0.4s ease both;
+}
+.panel-head { position: relative; border-bottom: 3px double var(--ink); padding-bottom: 0.7rem; }
+.panel-head h2 { font-family: 'Fraunces', serif; font-weight: 900; font-size: 2rem; }
+.panel-head .meta { font-size: 0.72rem; color: var(--ink-soft); letter-spacing: 0.08em; }
+#close-panel {
+  position: absolute; top: 0; right: 0;
+  font: inherit; font-size: 1.4rem; line-height: 1;
+  background: none; border: 1px solid var(--ink); width: 2rem; height: 2rem;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+#close-panel:hover { background: var(--signal); color: var(--paper); border-color: var(--signal); }
+#team-panel h4 {
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.14em;
+  margin: 1.3rem 0 0.5rem;
+}
+.sub { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-soft); font-size: 0.7rem; }
+
+.survival { width: 100%; max-width: 560px; display: block; }
+.sbar { fill: var(--pitch); opacity: 0.85; }
+.sline { fill: none; stroke: var(--signal); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.sval { font-size: 11px; text-anchor: middle; fill: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+.slab { font-size: 10px; text-anchor: middle; fill: var(--ink-soft); font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.08em; }
+
+.replay-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.replay-row {
+  display: grid; grid-template-columns: 9.5rem 1.4rem 5.5rem 1fr;
+  gap: 0.6rem; align-items: baseline;
+  font-size: 0.8rem; padding: 0.34rem 0.5rem;
+  border-bottom: 1px dotted var(--rule);
+}
+.rstage { color: var(--ink-soft); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.rres { font-weight: 700; text-align: center; border-radius: 2px; }
+.replay-row.W .rres { background: var(--pitch); color: var(--paper); }
+.replay-row.L .rres { background: var(--signal); color: var(--paper); }
+.replay-row.D .rres { background: var(--rule); }
+.rscore { font-variant-numeric: tabular-nums; }
+.rscore em { font-style: normal; font-size: 0.62rem; color: var(--ink-soft); margin-left: 0.3rem; }
+.exit {
+  margin-top: 0.8rem; font-family: 'Fraunces', serif; font-style: italic;
+  font-size: 1.05rem;
+}
+.hint { color: var(--ink-soft); font-size: 0.8rem; }
+
+/* ---- footer ---- */
+footer {
+  margin-top: 3.5rem; padding-top: 1.2rem;
+  border-top: 3px double var(--ink);
+  font-size: 0.72rem; color: var(--ink-soft); line-height: 1.7;
+}
+footer a { color: var(--pitch); }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 640px) {
+  body { padding: 0 0.7rem 3rem; }
+  .replay-row { grid-template-columns: 6.4rem 1.3rem 4.4rem 1fr; font-size: 0.72rem; }
+}
