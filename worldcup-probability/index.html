@@ -28,6 +28,9 @@
         <option value="1000">1,000 tournaments</option>
         <option value="10000" selected>10,000 tournaments</option>
         <option value="50000">50,000 tournaments</option>
+        <option value="100000">100,000 tournaments</option>
+        <option value="500000">500,000 tournaments</option>
+        <option value="1000000">1,000,000 tournaments</option>
       </select>
       <button id="run" class="btn">Run simulation</button>
       <span class="counter-wrap">universes simulated: <span id="counter">0</span></span>
@@ -62,6 +65,7 @@
       all fall out of the same dice. Knockout draws go to extra time, then a shootout with a mild Elo lean.
       Best-third allocation to the round-of-32 bracket follows the FIFA slot constraints via backtracking.
       Group assignments per the Final Draw (Dec 2025) and the March 2026 playoffs.
+      Big runs fan out across your CPU cores via Web Workers — a million tournaments in seconds.
     </div>
     <footer>
       <span>An <a href="https://amplifiedcreations.com/lab">Amplified Labs</a> experiment · MIT</span>

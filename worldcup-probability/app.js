@@ -12,7 +12,14 @@ const els = {
   scrim: $('#drawer-scrim'),
 };
 
-let agg = createAggregator();
+/* merged view over all workers' counters — same prob/runs interface
+   the renderers already use */
+const agg = {
+  runs: 0,
+  stage: {},
+  prob(id, k) { return this.runs ? (this.stage[id]?.[k] || 0) / this.runs : 0; },
+};
+
 let selected = null;
 let currentRun = null;       // one simulated tournament, kept stable while drawer open
 let drawerMode = 'likely';   // 'likely' (deterministic) | 'random' (one universe)
@@ -226,23 +233,80 @@ function renderDrawer() {
 
 function renderAll() { renderTable(); renderGroups(); if (selected) renderDrawer(); }
 
-/* ---- chunked run loop ---- */
-function runSimulations(total) {
-  agg = createAggregator();
+/* ---- simulation runs: worker pool, main-thread fallback ---- */
+let pool = [];
+let lastPaint = 0;
+
+function startRun() {
+  pool.forEach(w => w.terminate());
+  pool = [];
+  agg.runs = 0; agg.stage = {};
   els.runBtn.disabled = true;
-  const chunk = 250;
-  const tick = () => {
-    agg.run(Math.min(chunk, total - agg.runs));
-    els.counter.textContent = agg.runs.toLocaleString();
-    if (agg.runs % 2000 === 0 || agg.runs >= total) { renderTable(); renderGroups(); }
-    if (agg.runs < total) requestAnimationFrame(tick);
-    else {
-      els.runBtn.disabled = false;
-      els.counter.classList.add('done');
-      if (selected) { currentRun = simulateTournament(true); renderDrawer(); }
-    }
-  };
   els.counter.classList.remove('done');
+  lastPaint = 0;
+}
+
+function paint(final) {
+  els.counter.textContent = agg.runs.toLocaleString();
+  const now = performance.now();
+  if (final || now - lastPaint > 250) { // throttle the big innerHTML rebuilds
+    lastPaint = now;
+    renderTable(); renderGroups();
+  }
+  if (final) {
+    els.runBtn.disabled = false;
+    els.counter.classList.add('done');
+    if (selected) {
+      if (drawerMode === 'random') currentRun = simulateTournament(true);
+      renderDrawer();
+    }
+  }
+}
+
+function runSimulations(total) {
+  if (location.protocol === 'file:' || typeof Worker === 'undefined') {
+    return runOnMainThread(total);
+  }
+  startRun();
+  const nWorkers = total <= 10000 ? 1 : Math.min(navigator.hardwareConcurrency || 4, 8);
+  const share = Math.ceil(total / nWorkers);
+  const latest = []; // most recent snapshot per worker
+  let finished = 0;
+  for (let i = 0; i < nWorkers; i++) {
+    const w = new Worker('worker.js');
+    w.onerror = () => { // e.g. blocked importScripts — fall back once
+      pool.forEach(x => x.terminate()); pool = [];
+      runOnMainThread(total);
+    };
+    w.onmessage = ev => {
+      latest[i] = ev.data;
+      agg.runs = 0; agg.stage = {};
+      for (const snap of latest) {
+        if (!snap) continue;
+        agg.runs += snap.runs;
+        for (const id in snap.stage) {
+          const dst = agg.stage[id] || (agg.stage[id] = new Array(7).fill(0));
+          snap.stage[id].forEach((v, k) => dst[k] += v);
+        }
+      }
+      if (ev.data.done) finished++;
+      paint(finished === nWorkers);
+    };
+    w.postMessage({ n: i === nWorkers - 1 ? total - share * (nWorkers - 1) : share });
+    pool.push(w);
+  }
+}
+
+function runOnMainThread(total) {
+  startRun();
+  const local = createAggregator();
+  const tick = () => {
+    local.run(Math.min(1000, total - local.runs));
+    const snap = local.snapshot();
+    agg.runs = snap.runs; agg.stage = snap.stage;
+    paint(local.runs >= total);
+    if (local.runs < total) requestAnimationFrame(tick);
+  };
   requestAnimationFrame(tick);
 }
 

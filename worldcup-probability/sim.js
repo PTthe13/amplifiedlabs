@@ -276,5 +276,12 @@ function createAggregator() {
     get runs() { return runs; },
     /* probability team reaches at least stage k (k=1 r32 … 6 champion) */
     prob(id, k) { return runs ? stats[id].stage[k] / runs : 0; },
+    /* plain-object copy of the counters — for posting from a worker */
+    snapshot() {
+      return {
+        runs,
+        stage: Object.fromEntries(TEAMS.map(t => [t.id, stats[t.id].stage.slice()])),
+      };
+    },
   };
 }
