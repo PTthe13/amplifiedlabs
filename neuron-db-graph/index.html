@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DB Neuron Graph — 3D database network · Amplified Labs</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Database records as a 3D neuron-like network. Every node is a record, every thread a relationship, every pulse a link firing. ~500 sample records, force-directed in WebGL.">
+<style>
+  html, body { margin: 0; height: 100%; background: #0e0a08; color: #f6f1e8;
+               font-family: ui-monospace, "JetBrains Mono", "Menlo", monospace; overflow: hidden; }
+  #graph { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  .hud { position: fixed; pointer-events: none; z-index: 10; }
+  .hud a, .hud button { pointer-events: auto; font-family: inherit; }
+
+  .tag { top: 22px; left: 26px; color: #f16622; font-size: 11px; letter-spacing: .22em;
+         text-transform: uppercase; opacity: .9; line-height: 1.9; }
+  .tag .blink { animation: blink 1.4s steps(2) infinite; }
+  .tag .nums { color: rgba(246,241,232,.5); letter-spacing: .14em; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .credit { top: 22px; right: 26px; color: rgba(246,241,232,.6); font-size: 10px;
+            letter-spacing: .14em; text-decoration: none; text-transform: uppercase; }
+  .credit:hover { color: #f16622; }
+
+  .title { bottom: 24px; left: 26px; color: #f6f1e8; font-size: 12px; letter-spacing: .12em; max-width: 60vw; }
+  .title strong { color: #f16622; font-weight: 600; }
+  .title small { display: block; opacity: .45; margin-top: 6px; font-size: 10px; letter-spacing: .1em; }
+  .title .sel { display: block; margin-top: 8px; color: #bfe6ff; font-size: 11px; min-height: 14px; opacity: .9; }
+
+  .controls { bottom: 24px; right: 26px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .controls button { background: transparent; color: #f16622; border: 1px solid #f16622;
+    padding: 8px 14px; border-radius: 4px; font-size: 10px; letter-spacing: .18em;
+    text-transform: uppercase; cursor: pointer; min-width: 118px; text-align: center; }
+  .controls button:hover { background: #f16622; color: #0e0a08; }
+
+  .boot { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+          background: #0e0a08; transition: opacity .8s ease; }
+  .boot.gone { opacity: 0; pointer-events: none; }
+  .boot-inner { text-align: center; }
+  .boot-inner .pulse { width: 14px; height: 14px; margin: 0 auto 14px; border-radius: 999px;
+    background: #f16622; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(.6); opacity: .5; } 50% { transform: scale(1); opacity: 1; } }
+  .boot-inner small { color: rgba(246,241,232,.55); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; }
+
+  @media (max-width: 640px) {
+    .title { max-width: 78vw; }
+    .controls button { min-width: 104px; padding: 7px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="graph"></div>
+
+<div class="hud tag">
+  <span class="blink">●</span> Lab · DB neuron graph<br>
+  <span class="nums"><span id="nc">0</span> neurons · <span id="lc">0</span> synapses</span>
+</div>
+<a class="hud credit" href="https://amplifiedcreations.com/lab" target="_blank" rel="noopener">Amplified Creations ↗</a>
+
+<div class="hud title">
+  <strong>DB neuron graph.</strong>
+  <small>Each node = a record · each thread = a relation · pulses = links firing. Drag to orbit · scroll to zoom · hover to trace.</small>
+  <span class="sel" id="sel">~500 sample records</span>
+</div>
+
+<div class="hud controls">
+  <button id="fit">Fit view</button>
+  <button id="pulse">Firing: on</button>
+  <button id="reheat">Re-cluster</button>
+</div>
+
+<div class="boot" id="boot"><div class="boot-inner"><div class="pulse"></div><small>wiring synapses…</small></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var nodes=[], links=[];
+  function add(id,name,type,val){ nodes.push({id:id,name:name,type:type,val:val}); }
+  function link(a,b){ links.push({source:a,target:b}); }
+
+  var tagPool=['VR','3D','Web','Brand','Photo','AI','Aerial','Strategy','Medical','Luxury','Mobile','Data'];
+  tagPool.forEach(function(t){ add('tag:'+t, t, 'tag', 1.7); });
+  var fict=['Acme','Globex','Initech','Umbrella','Hooli','Stark','Wayne','Soylent','Tyrell','Cyberdyne','Wonka','Gekko','Oscorp','Aperture','BlackMesa','Vandelay'];
+  var N=32;
+  for(var ci=0;ci<N;ci++){
+    var cname=fict[ci%fict.length]+(ci>=fict.length?'·2':'');
+    add('cli:'+ci, cname, 'client', 2.0);
+    var np=2+Math.floor(Math.random()*3);
+    for(var p=0;p<np;p++){
+      var pid='prj:'+ci+'_'+p; add(pid, cname+' · P'+(p+1), 'project', 1.1); link('cli:'+ci, pid);
+      var used={}, nt=1+Math.floor(Math.random()*3);
+      for(var k=0;k<nt;k++){ var tg=tagPool[Math.floor(Math.random()*tagPool.length)]; if(!used[tg]){ used[tg]=1; link(pid,'tag:'+tg); } }
+      var ni=3+Math.floor(Math.random()*3);
+      for(var i=0;i<ni;i++){ var iid='inv:'+ci+'_'+p+'_'+i; add(iid, '#INV-'+ci+''+p+''+i, 'invoice', 0.55); link(pid, iid); }
+    }
+  }
+  document.getElementById('nc').textContent=nodes.length;
+  document.getElementById('lc').textContent=links.length;
+
+  var adj={}; links.forEach(function(l){ (adj[l.source]=adj[l.source]||[]).push(l.target); (adj[l.target]=adj[l.target]||[]).push(l.source); });
+  var hi=new Set(), hl=new Set();
+  var el=document.getElementById('graph');
+
+  var g=ForceGraph3D()(el)
+    .backgroundColor('#0e0a08')
+    .nodeRelSize(1.6)
+    .graphData({nodes:nodes, links:links})
+    .nodeLabel(function(n){ return n.name+'  ·  '+n.type; })
+    .nodeColor(function(n){ return hi.size ? (hi.has(n.id)?'#ffffff':'rgba(120,130,160,0.28)') : '#f2f4ff'; })
+    .nodeVal('val')
+    .nodeOpacity(0.92)
+    .linkColor(function(l){ var k=key(l); return hl.size ? (hl.has(k)?'#9fdcff':'rgba(160,180,230,0.08)') : 'rgba(175,200,255,0.42)'; })
+    .linkWidth(function(l){ return hl.has(key(l))?1.6:0.7; })
+    .linkDirectionalParticleColor(function(){ return '#cdecff'; })
+    .linkDirectionalParticleWidth(1.6)
+    .linkDirectionalParticles(function(l){ return hl.has(key(l))?4:0; })
+    .onNodeHover(function(n){
+      hi.clear(); hl.clear();
+      var s=document.getElementById('sel');
+      if(n){ hi.add(n.id); s.textContent=n.name+'  ('+n.type+')';
+        (adj[n.id]||[]).forEach(function(m){ hi.add(m); });
+        links.forEach(function(l){ var a=id(l.source), b=id(l.target); if(a===n.id||b===n.id) hl.add(a+'>'+b); });
+      } else { s.textContent='~500 sample records'; }
+      g.nodeColor(g.nodeColor()).linkColor(g.linkColor()).linkWidth(g.linkWidth()).linkDirectionalParticles(g.linkDirectionalParticles());
+    });
+  function id(x){ return x.id||x; }
+  function key(l){ return id(l.source)+'>'+id(l.target); }
+
+  g.d3Force('charge').strength(-22);
+  g.d3Force('link').distance(22);
+
+  function fitNow(ms){
+    g.zoomToFit(0,8);
+    var c=g.cameraPosition();
+    g.cameraPosition({x:c.x*0.72, y:c.y*0.72, z:c.z*0.72}, undefined, ms||0);
+  }
+  var fitted=false;
+  function autoFit(){ if(!fitted){ fitted=true; fitNow(0); document.getElementById('boot').classList.add('gone'); } }
+  g.onEngineStop(autoFit);
+  setTimeout(function(){ document.getElementById('boot').classList.add('gone'); autoFit(); }, 4500);
+
+  var firing=!reduce;
+  var pb=document.getElementById('pulse');
+  pb.textContent='Firing: '+(firing?'on':'off');
+  document.getElementById('fit').onclick=function(){ fitNow(450); };
+  pb.onclick=function(){ firing=!firing; pb.textContent='Firing: '+(firing?'on':'off'); };
+  document.getElementById('reheat').onclick=function(){ fitted=false; g.d3ReheatSimulation(); };
+  if(!reduce){
+    setInterval(function(){ if(!firing) return; for(var i=0;i<4;i++){ g.emitParticle(links[Math.floor(Math.random()*links.length)]); } }, 110);
+  }
+  window.addEventListener('resize', function(){ fitNow(0); });
+})();
+</script>
+</body>
+</html>
