@@ -22,6 +22,18 @@ Each folder is a self-contained piece — generative art, shaders, utility scrip
 | [`neuron-db-graph`](./neuron-db-graph) | Database records as a 3D neuron-like brain — every node a record, every thread a relation, every pulse a synapse firing. ~500 sample records, force-directed in WebGL. Hover any node to trace its connections. | 3D-force-graph · Three.js · d3-force-3d · WebGL |
 | [`worldcup-probability`](./worldcup-probability) | The Probability Almanac: Elo + Monte Carlo simulator for the 2026 World Cup. 10,000 tournaments in your browser — stage probabilities for all 48 teams, plus per-team survival curves and single-universe replays. | HTML · CSS · SVG · vanilla JS · Poisson/Elo |
 
+## Branding
+
+Every experiment must credit the studio with the **amplified® wordmark** ([`amplified-wordmark.svg`](./amplified-wordmark.svg), repo root) linking to [amplifiedcreations.com](https://amplifiedcreations.com) in a new tab:
+
+```html
+<a href="https://amplifiedcreations.com" target="_blank" rel="noopener">
+  <img src="../amplified-wordmark.svg" alt="amplified®" height="22">
+</a>
+```
+
+Typical placement: page header (≈22px tall) and footer (≈18px, "Made by amplified® · MIT licensed"). Don't copy the SVG into experiment folders — reference the root file.
+
 ## Running
 
 Each folder has its own README with run instructions. Most are static — open `index.html` in a browser. Node/PHP demos need their respective runtime.
