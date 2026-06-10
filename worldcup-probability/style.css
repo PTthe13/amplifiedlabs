@@ -175,13 +175,31 @@ tr td:last-child .heat {
   font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 11px;
 }
 
-/* ---- team panel ---- */
-#team-panel { display: none; }
-#team-panel.open {
-  display: block;
-  margin-top: 28px; padding: 22px 24px 26px;
-  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-  animation: rise .35s ease both;
+/* ---- bottom drawer ---- */
+#drawer-scrim {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(25, 21, 18, .35);
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+body.drawer-open #drawer-scrim { opacity: 1; pointer-events: auto; }
+#drawer {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  max-height: 82vh; overflow-y: auto;
+  max-width: 1080px; margin: 0 auto;
+  background: var(--card);
+  border: 1px solid var(--line); border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -12px 40px rgba(25, 21, 18, .18);
+  padding: 10px 24px 28px;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.32, .72, .25, 1);
+}
+body.drawer-open #drawer { transform: translateY(0); }
+body.drawer-open { overflow: hidden; }
+.drawer-handle {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: var(--line); margin: 4px auto 14px;
 }
 .panel-head { position: relative; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
 .panel-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin: 0; }
@@ -198,15 +216,70 @@ tr td:last-child .heat {
   transition: background .15s, color .15s;
 }
 #close-panel:hover { background: var(--loss); color: #fff; border-color: var(--loss); }
-#team-panel h4 {
+#drawer h4 {
   font-size: 12px; text-transform: uppercase; letter-spacing: .1em;
   color: var(--dim); font-weight: 600; margin: 22px 0 8px;
 }
-.sub-note, .sub { }
-#team-panel h4 .sub {
+#drawer h4 .sub {
   font-weight: 400; text-transform: none; letter-spacing: 0;
   font-size: 12px; margin: 0;
 }
+
+/* ---- bracket trajectory ---- */
+.bracket {
+  display: flex; align-items: flex-start; gap: 26px;
+  overflow-x: auto; padding: 6px 2px 14px;
+}
+.bk-col {
+  flex: 0 0 168px; display: flex; flex-direction: column; gap: 8px;
+  position: relative;
+}
+.bk-col + .bk-col::before {
+  content: ""; position: absolute; left: -26px; top: 44px;
+  width: 26px; height: 1px; background: var(--line);
+}
+.bk-col h5 {
+  margin: 0 0 2px;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--dim); font-weight: 600; white-space: nowrap;
+}
+.bk-card {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 12px; position: relative;
+}
+.bk-card .bk-res {
+  position: absolute; top: 8px; right: 8px;
+  font-weight: 700; font-size: 10px; border-radius: 4px; padding: 1px 5px;
+}
+.bk-card.W { border-color: rgba(34, 176, 125, .5); }
+.bk-card.W .bk-res { background: var(--ok); color: #fff; }
+.bk-card.L { border-color: rgba(214, 69, 51, .5); }
+.bk-card.L .bk-res { background: var(--loss); color: #fff; }
+.bk-card.D .bk-res { background: var(--card); border: 1px solid var(--line); color: var(--dim); }
+.bk-opp { font-weight: 600; padding-right: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bk-score {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.bk-score em { font-style: normal; font-size: 9px; color: var(--dim); margin-left: 4px; text-transform: uppercase; letter-spacing: .06em; }
+.bk-card.ghost {
+  background: transparent; border-style: dashed;
+  align-items: center; text-align: center; gap: 0; padding: 12px 10px;
+}
+.bk-col.ghost h5 { opacity: .55; }
+.bk-ghost-pct {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 16px; font-weight: 700; color: var(--dim);
+}
+.bk-ghost-lbl { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; line-height: 1.4; }
+.bk-card.trophy {
+  background: rgba(241, 102, 34, .08); border-color: var(--brand);
+  align-items: center; text-align: center; font-size: 22px; padding: 12px 10px;
+}
+.bk-card.trophy .bk-opp { padding: 0; font-size: 12px; color: var(--brand); }
 
 .survival { width: 100%; max-width: 560px; display: block; }
 .sbar { fill: var(--brand); opacity: .9; }
@@ -215,23 +288,6 @@ tr td:last-child .heat {
 .slab { font-size: 10px; text-anchor: middle; fill: var(--dim); font-family: ui-monospace, "JetBrains Mono", monospace; letter-spacing: .08em; }
 
 .replay-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
-.replay-row {
-  display: grid; grid-template-columns: 9.5rem 1.6rem 5.5rem 1fr;
-  gap: 10px; align-items: baseline;
-  font-size: 13px; padding: 6px 8px;
-  border-bottom: 1px solid var(--line);
-}
-.replay-row:last-of-type { border-bottom: none; }
-.rstage {
-  color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
-  font-family: ui-monospace, "JetBrains Mono", monospace;
-}
-.rres { font-weight: 700; text-align: center; border-radius: 5px; font-size: 11px; padding: 1px 0; }
-.replay-row.W .rres { background: var(--ok); color: #fff; }
-.replay-row.L .rres { background: var(--loss); color: #fff; }
-.replay-row.D .rres { background: var(--paper); color: var(--dim); }
-.rscore { font-variant-numeric: tabular-nums; font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 12px; }
-.rscore em { font-style: normal; font-size: 10px; color: var(--dim); margin-left: 4px; }
 .exit {
   margin: 14px 0 0;
   font-family: "Instrument Serif", ui-serif, Georgia, serif;
@@ -261,6 +317,7 @@ footer a { color: var(--brand); text-decoration: none; }
 
 @media (max-width: 640px) {
   body { padding: 24px 12px 48px; }
-  .replay-row { grid-template-columns: 6.4rem 1.5rem 4.4rem 1fr; font-size: 12px; }
+  #drawer { padding: 8px 14px 22px; max-height: 88vh; }
+  .bk-col { flex-basis: 148px; }
   .counter-wrap { margin-left: 0; }
 }
