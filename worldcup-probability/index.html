@@ -33,8 +33,12 @@
         <option value="1000000">1,000,000 tournaments</option>
       </select>
       <button id="run" class="btn">Run simulation</button>
+      <label class="momentum-wrap" title="Update each team's Elo after every simulated match (K=50) — winners gather momentum within a tournament, dark horses get fatter tails.">
+        <input type="checkbox" id="momentum"> momentum
+      </label>
       <span class="counter-wrap">universes simulated: <span id="counter">0</span></span>
     </div>
+    <p id="live-status" class="live-status"><span class="live-dot"></span>connecting to live feed…</p>
 
     <section>
       <h2 class="rubric">The Full Roster</h2>
@@ -53,6 +57,24 @@
     </section>
 
     <section>
+      <h2 class="rubric">The Projected Bracket</h2>
+      <p class="rubric-sub">Favorite-wins walk through the whole tree — each tie shows the projected winner's odds. Real results lock in as they happen (✓). Click any team.</p>
+      <div id="bracket-view" class="bracket-view"></div>
+    </section>
+
+    <section>
+      <h2 class="rubric">Head to Head</h2>
+      <p class="rubric-sub">Any two teams: single-match odds from the Elo–Poisson model, plus how often they actually cross paths in simulated tournaments.</p>
+      <div id="h2h" class="card-box"></div>
+    </section>
+
+    <section>
+      <h2 class="rubric">The Upset Index</h2>
+      <p class="rubric-sub">Where chaos is most affordable — upcoming ties ranked by the underdog's outright win odds.</p>
+      <div id="upsets" class="card-box"></div>
+    </section>
+
+    <section>
       <h2 class="rubric">The Twelve Groups</h2>
       <p class="rubric-sub">Chance of surviving the group (top two + best eight thirds advance).</p>
       <div id="groups"></div>
@@ -66,6 +88,10 @@
       Best-third allocation to the round-of-32 bracket follows the FIFA slot constraints via backtracking.
       Group assignments per the Final Draw (Dec 2025) and the March 2026 playoffs.
       Big runs fan out across your CPU cores via Web Workers — a million tournaments in seconds.
+      During the tournament the page polls FIFA's public match feed every five minutes: finished matches are
+      locked into every simulation, real knockout pairings override simulated standings, and the title odds
+      show their movement against the pre-tournament baseline. Momentum mode updates Elo within each simulated
+      tournament (K=50). The what-if slider re-simulates a single team at an adjusted rating.
     </div>
     <footer>
       <span>Made by <a href="https://amplifiedcreations.com">Amplified Creations</a> · MIT licensed</span>
@@ -76,6 +102,7 @@
   <div id="drawer-scrim" aria-hidden="true"></div>
   <aside id="drawer" role="dialog" aria-modal="true" aria-live="polite"></aside>
 
+  <script src="live.js"></script>
   <script src="data.js"></script>
   <script src="sim.js"></script>
   <script src="app.js"></script>
