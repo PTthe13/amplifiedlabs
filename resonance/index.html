@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Resonance — Amplified Labs</title>
+  <meta name="description" content="A real-time WebGL experience in three scenes — a raymarched dreamscape, a 350k-particle field, and an audio-reactive nebula — that periodically reform into the amplified® wordmark.">
+  <meta property="og:title" content="Resonance — Amplified Labs">
+  <meta property="og:description" content="Three GPU scenes, one wordmark. Raymarched dreamscape, particle field, audio-reactive nebula. Runs in the browser, no build step.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="loader" id="loader">
+    <div class="ring"></div>
+    <p>tuning the field…</p>
+  </div>
+
+  <div class="nowebgl" id="nowebgl" hidden>
+    <p>This experience needs WebGL2. Try a recent Chrome, Safari, Firefox or Edge.</p>
+  </div>
+
+  <header class="top">
+    <a href="https://amplifiedcreations.com" target="_blank" rel="noopener" class="wordmark-link" aria-label="Amplified Creations">
+      <img src="../amplified-wordmark.svg" alt="amplified®" class="wordmark">
+    </a>
+    <span class="crumb">· Resonance</span>
+  </header>
+
+  <p class="hint" id="hint">move your cursor — <span>drag to steer</span></p>
+
+  <div class="hud" id="hud">
+    <div class="tabs" role="tablist" aria-label="Scenes">
+      <button class="tab is-on" data-scene="0">Dreamscape</button>
+      <button class="tab" data-scene="1">Field</button>
+      <button class="tab" data-scene="2">Nebula</button>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="audio" id="audio" hidden>
+      <button class="ctrl play" id="play" aria-label="Play or pause">▶</button>
+      <select class="track" id="track" aria-label="Track">
+        <option value="0">Aurora</option>
+        <option value="1">Pulse</option>
+        <option value="2">Drift</option>
+        <option value="3">Void</option>
+        <option value="4">Nebula</option>
+      </select>
+      <button class="ctrl mic" id="mic" aria-label="Use microphone">MIC</button>
+    </div>
+
+    <button class="ctrl auto" id="auto" aria-pressed="false" title="Auto-cycle the scenes">AUTO</button>
+  </div>
+
+  <footer class="credit">
+    <a href="https://amplifiedcreations.com" target="_blank" rel="noopener">
+      <img src="../amplified-wordmark.svg" alt="amplified®" height="16">
+    </a>
+    <span>· Made by amplified® · <a href="https://github.com/PTthe13/amplifiedlabs/tree/main/resonance">source</a> · MIT</span>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
