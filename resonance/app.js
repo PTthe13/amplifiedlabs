@@ -130,16 +130,16 @@ const dreamMat = new THREE.ShaderMaterial({
     float t=0.0, glow=0.0, acc=0.0;
     for(int i=0;i<90;i++){
       vec3 p=ro+rd*t; float d=map(p);
-      glow+=exp(-abs(d)*5.0)*0.028;
+      glow+=exp(-abs(d)*7.0)*0.013;
       acc+=palette(glow*1.4+p.z*0.04+uTime*0.02).x*0.0; // keep p referenced
       t+=max(abs(d),0.03);
       if(t>52.0) break;
     }
     float g=glow;
-    vec3 col=palette(g*0.9+ro.z*0.03)*g*1.7;
-    col+=vec3(0.945,0.40,0.133)*pow(g,2.2)*0.6; // orange core bloom
+    vec3 col=palette(g*0.9+ro.z*0.03)*g*1.9;
+    col+=vec3(0.945,0.40,0.133)*pow(g,2.6)*0.7; // orange core bloom
     col=col/(1.0+col); // tonemap
-    col=pow(col,vec3(0.86));
+    col=pow(col,vec3(1.05));
     float vig=1.0-0.28*dot(uv*0.62,uv*0.62);
     gl_FragColor=vec4(col*vig,1.0);
   }`,
@@ -173,7 +173,7 @@ function buildField() {
   g.setAttribute('aTarget', new THREE.BufferAttribute(tgt, 3));
   const uni = {
     uTime: { value: 0 }, uMorph: { value: 0 }, uMouse: { value: new THREE.Vector3() },
-    uPull: { value: 0 }, uSize: { value: MOBILE ? 1.5 : 1.9 }, uDpr: { value: DPR },
+    uPull: { value: 0 }, uSize: { value: MOBILE ? 1.2 : 1.5 }, uDpr: { value: DPR },
   };
   const mat = new THREE.ShaderMaterial({
     uniforms: uni, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -201,9 +201,9 @@ function buildField() {
     void main(){
       vec2 uv=gl_PointCoord-0.5; float r=dot(uv,uv);
       if(r>0.25) discard;
-      float a=exp(-r*7.0);
+      float a=exp(-r*7.5);
       vec3 col=palette(vGlow*0.7+vSeed*0.25);
-      gl_FragColor=vec4(col*(0.5+vGlow),a*0.65);
+      gl_FragColor=vec4(col*(0.35+vGlow*0.7),a*0.16);
     }`,
   });
   return new THREE.Points(g, mat);
@@ -231,7 +231,7 @@ function buildNeb() {
   g.setAttribute('aTarget', new THREE.BufferAttribute(tgt, 3));
   const uni = {
     uTime: { value: 0 }, uBass: { value: 0 }, uMid: { value: 0 }, uTreble: { value: 0 },
-    uLevel: { value: 0 }, uMorph: { value: 0 }, uSize: { value: MOBILE ? 1.8 : 2.3 }, uDpr: { value: DPR },
+    uLevel: { value: 0 }, uMorph: { value: 0 }, uSize: { value: MOBILE ? 1.4 : 1.7 }, uDpr: { value: DPR },
   };
   const mat = new THREE.ShaderMaterial({
     uniforms: uni, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -257,9 +257,9 @@ function buildNeb() {
     void main(){
       vec2 uv=gl_PointCoord-0.5; float r=dot(uv,uv);
       if(r>0.25) discard;
-      float a=exp(-r*6.0);
+      float a=exp(-r*6.5);
       vec3 col=palette(vGlow*0.6+vSeed*0.3+0.1);
-      gl_FragColor=vec4(col*(0.5+vGlow),a*0.6);
+      gl_FragColor=vec4(col*(0.35+vGlow*0.7),a*0.17);
     }`,
   });
   return new THREE.Points(g, mat);
