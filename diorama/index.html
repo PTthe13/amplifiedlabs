@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <script type="importmap">
   {
     "imports": {
@@ -97,8 +97,18 @@
       <div class="add-row" id="add-row"></div>
     </section>
 
+    <section>
+      <div class="sec-head"><span class="mono">SHARE</span></div>
+      <div class="btn-row">
+        <button class="mini accent" id="share-link">Copy link</button>
+        <button class="mini" id="share-png">Save PNG</button>
+      </div>
+    </section>
+
     <button class="reset" id="reset-btn">Reset room</button>
   </aside>
+
+  <div class="toast" id="toast" hidden></div>
 
   <footer class="credit">
     <a href="https://amplifiedcreations.com" target="_blank" rel="noopener">
@@ -107,6 +117,6 @@
     <span>· Made by amplified® · <a href="https://github.com/PTthe13/amplifiedlabs/tree/main/diorama">source</a> · MIT</span>
   </footer>
 
-  <script type="module" src="./app.js?v=4"></script>
+  <script type="module" src="./app.js?v=5"></script>
 </body>
 </html>

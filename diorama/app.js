@@ -24,7 +24,7 @@ const canvas = $('#c');
 // ---------------------------------------------------------------------------
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
 } catch (e) { showNoWebGL(); throw e; }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
@@ -500,8 +500,42 @@ function applyTheme(name) {
   saveState();
 }
 
+// ---- share --------------------------------------------------------------
+let toastT;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg; el.hidden = false;
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(toastT);
+  toastT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.hidden = true, 300); }, 2400);
+}
+
+$('#share-link').onclick = async () => {
+  const enc = encodeURIComponent(encodeState(statePayload()));
+  const url = location.origin + location.pathname + '#s=' + enc;
+  history.replaceState(null, '', '#s=' + enc);
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Link copied — your room travels with it');
+  } catch (_) {
+    prompt('Copy your room link:', url);
+  }
+};
+
+$('#share-png').onclick = () => {
+  const prev = outline.selectedObjects;
+  outline.selectedObjects = [];        // no selection outline in the shot
+  composer.render();
+  const data = renderer.domElement.toDataURL('image/png');
+  outline.selectedObjects = prev;
+  const a = document.createElement('a');
+  a.href = data; a.download = 'diorama.png'; a.click();
+  toast('Saved diorama.png');
+};
+
 $('#reset-btn').onclick = () => {
   localStorage.removeItem('diorama');
+  if (location.hash) history.replaceState(null, '', location.pathname);
   roomState = { ...DEFAULT_ROOM };
   applyRoomState();
   loadLayout(DEFAULT_LAYOUT);
@@ -534,14 +568,23 @@ function rgbEq(a, hex) {
 const DEFAULT_ROOM = { wall: '#2a2320', floor: 'oak', rug: 'sand', slats: true, lamps: true };
 let roomState = { ...DEFAULT_ROOM };
 
-function saveState() {
-  const layout = pieces.map(g => ({
-    type: g.userData.type,
-    x: +g.position.x.toFixed(2), z: +g.position.z.toFixed(2),
-    rot: +g.rotation.y.toFixed(3), color: g.userData.color,
-  }));
-  localStorage.setItem('diorama', JSON.stringify({ layout, room: roomState }));
+function statePayload() {
+  return {
+    layout: pieces.map(g => ({
+      type: g.userData.type,
+      x: +g.position.x.toFixed(2), z: +g.position.z.toFixed(2),
+      rot: +g.rotation.y.toFixed(3), color: g.userData.color,
+    })),
+    room: roomState,
+  };
 }
+function saveState() {
+  localStorage.setItem('diorama', JSON.stringify(statePayload()));
+}
+
+// pack the whole room into a URL-safe string (base64 of UTF-8 JSON)
+function encodeState(p) { return btoa(unescape(encodeURIComponent(JSON.stringify(p)))); }
+function decodeState(s) { return JSON.parse(decodeURIComponent(escape(atob(s)))); }
 function applyRoomState() {
   wallMat.color.set(roomState.wall);
   setFloor(roomState.floor); setRug(roomState.rug); setSlats(roomState.slats);
@@ -551,12 +594,15 @@ function applyRoomState() {
   $('#lamp-toggle').textContent = roomState.lamps ? 'Lamps on' : 'Lamps off';
 }
 function boot() {
-  let saved = null;
-  try { saved = JSON.parse(localStorage.getItem('diorama')); } catch (_) {}
-  if (saved && saved.layout && saved.layout.length) {
-    roomState = { ...DEFAULT_ROOM, ...saved.room };
+  let src = null;
+  // a shared link (#s=…) wins over local storage
+  const m = location.hash.match(/[#&]s=([^&]+)/);
+  if (m) { try { src = decodeState(decodeURIComponent(m[1])); } catch (_) {} }
+  if (!src) { try { src = JSON.parse(localStorage.getItem('diorama')); } catch (_) {} }
+  if (src && src.layout && src.layout.length) {
+    roomState = { ...DEFAULT_ROOM, ...src.room };
     applyRoomState();
-    loadLayout(saved.layout);
+    loadLayout(src.layout);
   } else {
     applyRoomState();
     loadLayout(DEFAULT_LAYOUT);

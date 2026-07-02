@@ -112,6 +112,22 @@ body { font-family: var(--font); color: var(--ink); -webkit-font-smoothing: anti
 
 .note { font-size: 11px; line-height: 1.4; color: var(--dim); margin-top: -2px; }
 
+.mini.accent { background: var(--orange); border-color: var(--orange); color: #0a0806; font-weight: 600; }
+.mini.accent:hover { background: #ff7a3c; border-color: #ff7a3c; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(10px);
+  z-index: 30; pointer-events: none;
+  background: var(--panel); border: 1px solid var(--line); color: var(--ink);
+  font-size: 13px; font-weight: 500; letter-spacing: 0.01em;
+  padding: 11px 20px; border-radius: 999px;
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.55);
+  opacity: 0; transition: opacity 0.3s, transform 0.3s;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (max-width: 720px) { .toast { bottom: auto; top: 60px; } }
+
 .obj {
   padding: 12px; border-radius: 12px;
   background: rgba(241, 102, 34, 0.06);
