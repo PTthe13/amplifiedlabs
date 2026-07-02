@@ -191,7 +191,7 @@ function buildField() {
       fp+=normalize(toM)*(uPull*22.0/d);
       float m=smoothstep(0.0,1.0,uMorph);
       vec3 pos=mix(fp,aTarget,m);
-      vGlow=clamp(length(flow)*0.09+m*0.7,0.0,1.4); vSeed=aSeed;
+      vGlow=clamp(length(flow)*0.09+m*0.35,0.0,1.2); vSeed=aSeed;
       vec4 mv=modelViewMatrix*vec4(pos,1.0);
       gl_PointSize=uSize*uDpr*(320.0/-mv.z)*(0.55+0.9*aSeed);
       gl_Position=projectionMatrix*mv;
@@ -366,10 +366,19 @@ function frame() {
     if (autoTimer > 16) { setScene((scene + 1) % 3, true); }
   }
 
-  // camera orbit for particle scenes
+  // wordmark morph amount for the Field scene (drives camera + uniform)
+  const fieldMorph = scene === 1 ? morphCycle(time, 15, 3) : 0;
+
+  // camera orbit for particle scenes; anchor to the front while the wordmark forms
   orbit += dt * 0.06;
-  const camAng = orbit + pointer.x * 0.5;
-  persp.position.set(Math.sin(camAng) * 82, pointer.y * 16 + 4, Math.cos(camAng) * 82);
+  let camAng = orbit + pointer.x * 0.5;
+  let camY = pointer.y * 16 + 4, camR = 82;
+  if (fieldMorph > 0) {
+    camAng *= (1 - fieldMorph);         // ease azimuth to front (readable, not mirrored)
+    camY *= (1 - fieldMorph);
+    camR = 82 - 8 * fieldMorph;         // slight dolly-in on the reveal
+  }
+  persp.position.set(Math.sin(camAng) * camR, camY, Math.cos(camAng) * camR);
   persp.lookAt(0, 0, 0);
 
   if (scene === 0) {
@@ -379,7 +388,7 @@ function frame() {
   } else if (scene === 1) {
     const u = field.material.uniforms;
     u.uTime.value = time;
-    u.uMorph.value = morphCycle(time, 15, 3);
+    u.uMorph.value = fieldMorph;
     u.uPull.value = pointer.down ? -1.2 : 0.5;
     u.uMouse.value.set(pointer.x * 46, pointer.y * 30, 0);
     renderer.render(fieldScene, persp);
