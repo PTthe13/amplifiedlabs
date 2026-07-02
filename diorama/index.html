@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
   <script type="importmap">
   {
     "imports": {
@@ -43,7 +43,11 @@
 
   <!-- control dock -->
   <aside class="dock" id="dock">
-    <button class="dock-handle" id="panel-toggle" aria-label="Collapse panel">⌄</button>
+    <button class="dock-handle" id="panel-toggle" aria-label="Show or hide controls">
+      <span class="grip"></span>
+      <span class="lbl">Customize</span>
+      <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
 
     <section class="obj" id="obj-controls" hidden>
       <div class="sec-head"><span class="mono">SELECTED</span><span class="tag" id="obj-name">—</span></div>
@@ -103,6 +107,6 @@
     <span>· Made by amplified® · <a href="https://github.com/PTthe13/amplifiedlabs/tree/main/diorama">source</a> · MIT</span>
   </footer>
 
-  <script type="module" src="./app.js?v=3"></script>
+  <script type="module" src="./app.js?v=4"></script>
 </body>
 </html>

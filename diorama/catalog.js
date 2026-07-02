@@ -253,7 +253,7 @@ export const CATALOG = [
 export const DEFAULT_LAYOUT = [
   { type: 'shelf', x: 0.6, z: -4.4, rot: 0 },
   { type: 'cabinet', x: -1.8, z: -4.35, rot: 0 },
-  { type: 'sofa', x: -3.1, z: -0.6, rot: Math.PI / 2 },
+  { type: 'sofa', x: -3.1, z: -0.6, rot: Math.PI / 2, color: '#7a4a32' },
   { type: 'lamp', x: -4.2, z: 1.7 },
   { type: 'table', x: -2.9, z: 1.4, rot: 0 },
   { type: 'plant', x: -0.3, z: -3.6 },

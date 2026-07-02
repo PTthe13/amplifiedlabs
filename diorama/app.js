@@ -8,7 +8,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { build, CATALOG, DEFAULT_LAYOUT } from './catalog.js';
+import { build, CATALOG, DEFAULT_LAYOUT } from './catalog.js?v=2';
 
 const ROOM = 10;          // floor is ROOM x ROOM, centred on origin
 const HALF = ROOM / 2;
@@ -530,7 +530,8 @@ function rgbEq(a, hex) {
 // ---------------------------------------------------------------------------
 // persistence
 // ---------------------------------------------------------------------------
-const DEFAULT_ROOM = { wall: '#1a1512', floor: 'walnut', rug: 'ember', slats: false, lamps: true };
+// default room = the Warm theme (wood-slat walls, oak floor, sand rug)
+const DEFAULT_ROOM = { wall: '#2a2320', floor: 'oak', rug: 'sand', slats: true, lamps: true };
 let roomState = { ...DEFAULT_ROOM };
 
 function saveState() {

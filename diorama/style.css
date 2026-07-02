@@ -57,17 +57,8 @@ body { font-family: var(--font); color: var(--ink); -webkit-font-smoothing: anti
 }
 .dock::-webkit-scrollbar { width: 6px; }
 .dock::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
-.dock.collapsed { max-height: 58px; overflow: hidden; }
-
-.dock-handle {
-  align-self: flex-end;
-  width: 26px; height: 26px; border-radius: 8px; margin-bottom: -4px;
-  background: transparent; border: 1px solid var(--line);
-  color: var(--dim); cursor: pointer; font-size: 14px; line-height: 1;
-  transition: 0.2s; flex: none;
-}
-.dock-handle:hover { color: var(--ink); border-color: var(--dim); }
-.dock.collapsed .dock-handle { transform: rotate(180deg); }
+/* handle is a mobile-only bottom-sheet grabber — desktop panel is always open */
+.dock-handle { display: none; }
 
 .dock section { display: flex; flex-direction: column; gap: 9px; }
 .sec-head { display: flex; align-items: center; justify-content: space-between; }
@@ -149,15 +140,39 @@ body { font-family: var(--font); color: var(--ink); -webkit-font-smoothing: anti
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideIn { from { opacity: 0; transform: translate(20px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
 
-/* ---- mobile ---- */
+/* ---- mobile: dock becomes a bottom sheet with a real grab handle ---- */
 @media (max-width: 720px) {
   .dock {
     top: auto; bottom: 0; right: 0; left: 0; transform: none;
-    width: 100%; max-height: 46vh; border-radius: 18px 18px 0 0;
+    width: 100%; max-height: 64vh; border-radius: 20px 20px 0 0;
+    padding-top: 6px;
     animation: slideUp 0.6s 0.5s both;
+    transition: max-height 0.34s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .dock.collapsed { max-height: 52px; }
   @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-  .credit { bottom: 48vh; }
+
+  /* order the grabber above everything; it stays put while sections scroll */
+  .dock-handle {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    position: sticky; top: 0; z-index: 2; order: -1;
+    width: 100%; padding: 14px 0 10px; margin: -6px 0 2px;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--ink); font-family: var(--font);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .dock-handle .grip {
+    position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+    width: 40px; height: 4px; border-radius: 2px;
+    background: rgba(255, 255, 255, 0.24); transition: background 0.2s;
+  }
+  .dock-handle:active .grip { background: rgba(255, 255, 255, 0.4); }
+  .dock-handle .lbl { color: var(--dim); }
+  .dock-handle .chev { color: var(--orange); transition: transform 0.3s ease; }
+  .dock.collapsed .dock-handle .chev { transform: rotate(180deg); }
+
+  /* collapsed: only the grabber bar shows */
+  .dock.collapsed { max-height: 46px; overflow: hidden; }
+
+  .credit { display: none; }
   .top { top: 14px; left: 16px; }
 }
