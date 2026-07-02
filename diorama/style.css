@@ -1,0 +1,161 @@
+:root {
+  --bg: #0a0806;
+  --ink: #f4ede2;
+  --dim: #9a9186;
+  --orange: #f16622;
+  --panel: rgba(20, 17, 14, 0.72);
+  --line: rgba(255, 255, 255, 0.09);
+  --font: 'Inter Tight', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body { font-family: var(--font); color: var(--ink); -webkit-font-smoothing: antialiased; touch-action: none; }
+
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ---- header + footer ---- */
+.top {
+  position: fixed; top: 20px; left: 24px; z-index: 10;
+  display: flex; align-items: center; gap: 10px;
+}
+.wordmark { height: 22px; display: block; }
+.crumb { font-size: 15px; color: var(--dim); font-weight: 500; }
+
+.credit {
+  position: fixed; bottom: 16px; right: 20px; z-index: 10;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--dim);
+}
+.credit img { display: block; opacity: 0.85; }
+.credit a { color: var(--dim); text-decoration: none; }
+.credit a:hover { color: var(--ink); }
+
+.hint {
+  position: fixed; top: 22px; left: 50%; transform: translateX(-50%); z-index: 10;
+  font-size: 12.5px; color: var(--dim); letter-spacing: 0.02em;
+  background: var(--panel); padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--line); backdrop-filter: blur(12px);
+  animation: fade 0.8s 0.4s both;
+}
+.hint span { color: var(--ink); }
+@media (max-width: 720px) { .hint { display: none; } }
+
+/* ---- control dock ---- */
+.dock {
+  position: fixed; top: 50%; right: 20px; transform: translateY(-50%); z-index: 12;
+  width: 268px; max-height: 86vh; overflow-y: auto;
+  padding: 16px; border-radius: 18px;
+  background: var(--panel); border: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; gap: 14px;
+  animation: slideIn 0.6s 0.5s both;
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
+.dock::-webkit-scrollbar { width: 6px; }
+.dock::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+.dock.collapsed { max-height: 52px; overflow: hidden; }
+
+.dock-handle {
+  position: absolute; top: 12px; right: 14px;
+  width: 26px; height: 26px; border-radius: 8px;
+  background: transparent; border: 1px solid var(--line);
+  color: var(--dim); cursor: pointer; font-size: 14px; line-height: 1;
+  transition: 0.2s;
+}
+.dock-handle:hover { color: var(--ink); border-color: var(--dim); }
+.dock.collapsed .dock-handle { transform: rotate(180deg); }
+
+.dock section { display: flex; flex-direction: column; gap: 9px; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; }
+.mono {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.16em; color: var(--dim);
+}
+.tag {
+  font-size: 11px; text-transform: capitalize; color: var(--orange);
+  font-weight: 600; letter-spacing: 0.02em;
+}
+
+/* swatches */
+.swatches { display: flex; flex-wrap: wrap; gap: 7px; }
+.sw {
+  width: 26px; height: 26px; border-radius: 8px; cursor: pointer;
+  border: 2px solid transparent; padding: 0;
+  transition: transform 0.12s, border-color 0.12s;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+.sw:hover { transform: scale(1.12); }
+.sw.on { border-color: var(--ink); }
+
+/* buttons */
+.btn-row, .add-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.mini, .chip {
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  color: var(--ink); background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line); border-radius: 9px;
+  padding: 7px 11px; cursor: pointer; transition: 0.15s;
+}
+.mini:hover, .chip:hover { background: rgba(255, 255, 255, 0.11); border-color: var(--dim); }
+.mini.danger:hover { background: rgba(224, 60, 40, 0.2); border-color: #e03c28; color: #ffb4a8; }
+#themes .mini:hover { background: rgba(241, 102, 34, 0.16); border-color: var(--orange); }
+
+.toggle {
+  font-family: var(--font); font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--dim); background: transparent;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 3px 10px; cursor: pointer; transition: 0.15s;
+}
+.toggle:hover { color: var(--ink); }
+.toggle.on { color: #0a0806; background: var(--orange); border-color: var(--orange); }
+
+.reset {
+  font-family: var(--font); font-size: 12px; color: var(--dim);
+  background: transparent; border: 1px dashed var(--line); border-radius: 10px;
+  padding: 9px; cursor: pointer; transition: 0.15s; margin-top: 2px;
+}
+.reset:hover { color: var(--ink); border-color: var(--dim); }
+
+.obj {
+  padding: 12px; border-radius: 12px;
+  background: rgba(241, 102, 34, 0.06);
+  border: 1px solid rgba(241, 102, 34, 0.22);
+}
+
+/* ---- loader / fallback ---- */
+.loader {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-content: center;
+  gap: 18px; background: var(--bg); transition: opacity 0.6s;
+}
+.loader.gone { opacity: 0; pointer-events: none; }
+.loader p { color: var(--dim); font-size: 13px; letter-spacing: 0.04em; text-align: center; }
+.ring {
+  width: 46px; height: 46px; margin: 0 auto; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--orange);
+  animation: spin 0.9s linear infinite;
+}
+.nowebgl {
+  position: fixed; inset: 0; z-index: 21; display: grid; place-content: center;
+  background: var(--bg); padding: 24px;
+}
+.nowebgl p { color: var(--dim); font-size: 15px; max-width: 34ch; text-align: center; line-height: 1.5; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideIn { from { opacity: 0; transform: translate(20px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
+
+/* ---- mobile ---- */
+@media (max-width: 720px) {
+  .dock {
+    top: auto; bottom: 0; right: 0; left: 0; transform: none;
+    width: 100%; max-height: 46vh; border-radius: 18px 18px 0 0;
+    animation: slideUp 0.6s 0.5s both;
+  }
+  .dock.collapsed { max-height: 46px; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  .credit { bottom: 48vh; }
+  .top { top: 14px; left: 16px; }
+}

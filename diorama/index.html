@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Diorama — Amplified Labs</title>
+  <meta name="description" content="An isometric cutaway room, rendered in real time. Drag furniture onto a grid, recolour every piece, re-skin the walls and floor, and swap whole moods with one click. Three.js, no build step.">
+  <meta property="og:title" content="Diorama — Amplified Labs">
+  <meta property="og:description" content="A 3D cutaway room you can rearrange, recolour and re-skin. Grid drag-and-drop, soft shadows, bloom. Runs in the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=1">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="loader" id="loader">
+    <div class="ring"></div>
+    <p>furnishing the room…</p>
+  </div>
+
+  <div class="nowebgl" id="nowebgl" hidden>
+    <p>This experience needs WebGL. Try a recent Chrome, Safari, Firefox or Edge.</p>
+  </div>
+
+  <header class="top">
+    <a href="https://amplifiedcreations.com" target="_blank" rel="noopener" class="wordmark-link" aria-label="Amplified Creations">
+      <img src="../amplified-wordmark.svg" alt="amplified®" class="wordmark">
+    </a>
+    <span class="crumb">· Diorama</span>
+  </header>
+
+  <p class="hint" id="hint">click a piece · <span>drag to move</span> · R to rotate · Del to remove</p>
+
+  <!-- control dock -->
+  <aside class="dock" id="dock">
+    <button class="dock-handle" id="panel-toggle" aria-label="Collapse panel">⌄</button>
+
+    <section class="obj" id="obj-controls" hidden>
+      <div class="sec-head"><span class="mono">SELECTED</span><span class="tag" id="obj-name">—</span></div>
+      <div class="swatches" id="obj-swatches"></div>
+      <div class="btn-row">
+        <button class="mini" id="rotate-btn">Rotate</button>
+        <button class="mini" id="dup-btn">Duplicate</button>
+        <button class="mini danger" id="del-btn">Remove</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><span class="mono">WALLS</span>
+        <button class="toggle" id="slat-toggle">Slats</button>
+      </div>
+      <div class="swatches" id="wall-swatches"></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><span class="mono">FLOOR</span></div>
+      <div class="swatches" id="floor-swatches"></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><span class="mono">RUG</span>
+        <button class="toggle on" id="lamp-toggle">Lamps</button>
+      </div>
+      <div class="swatches" id="rug-swatches"></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><span class="mono">THEMES</span></div>
+      <div class="btn-row" id="themes">
+        <button class="mini" data-theme="studio">Studio</button>
+        <button class="mini" data-theme="warm">Warm</button>
+        <button class="mini" data-theme="cool">Cool</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><span class="mono">ADD</span></div>
+      <div class="add-row" id="add-row"></div>
+    </section>
+
+    <button class="reset" id="reset-btn">Reset room</button>
+  </aside>
+
+  <footer class="credit">
+    <a href="https://amplifiedcreations.com" target="_blank" rel="noopener">
+      <img src="../amplified-wordmark.svg" alt="amplified®" height="16">
+    </a>
+    <span>· Made by amplified® · <a href="https://github.com/PTthe13/amplifiedlabs/tree/main/diorama">source</a> · MIT</span>
+  </footer>
+
+  <script type="module" src="./app.js?v=1"></script>
+</body>
+</html>
