@@ -3,17 +3,19 @@ import { ProceduralAudio } from './audio.js';
 
 /* ============================================================= boot */
 const canvas = document.getElementById('c');
-const _hasWebGL2 = !!document.createElement('canvas').getContext('webgl2');
-let renderer;
-if (_hasWebGL2) {
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', alpha: false });
-  } catch (e) {}
-}
+// Let three build whatever context it can get (WebGL2 or WebGL1 — the shaders
+// here are GLSL1, so either works). Only fall back if there's truly no WebGL.
+let renderer, initErr;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', alpha: false });
+} catch (e) { initErr = e; }
 if (!renderer) {
   document.getElementById('loader').classList.add('gone');
-  document.getElementById('nowebgl').hidden = false;
-  throw new Error('no webgl2');
+  const box = document.getElementById('nowebgl');
+  box.innerHTML = '<p>This experience needs WebGL. Enable hardware acceleration, or try a recent Chrome, Safari, Firefox or Edge.'
+    + (initErr ? '<br><small style="opacity:.5">' + String(initErr.message || initErr) + '</small>' : '') + '</p>';
+  box.hidden = false;
+  throw new Error('no webgl');
 }
 renderer.setClearColor(0x0a0807, 1);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
