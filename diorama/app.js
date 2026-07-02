@@ -166,8 +166,8 @@ function makeWall(w) {
   const n = Math.floor(w / 0.34);
   for (let i = 0; i < n; i++) {
     const sx = -w / 2 + 0.17 + i * (w / n);
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, WALL_H - 0.2, 0.08), slatMat);
-    bar.position.set(sx, WALL_H / 2, 0.05);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, WALL_H - 0.2, 0.06), slatMat);
+    bar.position.set(sx, WALL_H / 2, 0.035); // front face ~0.065 off wall — stays behind DECOR_OFF
     bar.castShadow = true; bar.receiveShadow = true;
     slats.add(bar);
   }
@@ -202,7 +202,10 @@ rug.position.set(1.2, 0.01, 1.4);
 rug.receiveShadow = true;
 room.add(rug);
 
-// wall decor (fixed, not draggable): clock + framed art on left wall
+// wall decor (fixed, not draggable): clock + framed art on left wall.
+// Mounted DECOR_OFF from the wall so it always clears the wood-slat skin
+// (slat front ~0.065) — otherwise the slats slice through the art.
+const DECOR_OFF = 0.14;
 function wallDecor() {
   const clock = new THREE.Group();
   clock.add(new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.03, 8, 40),
@@ -213,7 +216,7 @@ function wallDecor() {
   const hand2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.02),
     new THREE.MeshStandardMaterial({ color: 0xe8e8e8 }));
   hand2.position.x = 0.1; clock.add(hand2);
-  clock.position.set(-HALF + 0.08, 3.4, -2.2);
+  clock.position.set(-HALF + DECOR_OFF, 3.4, -2.2);
   clock.rotation.y = Math.PI / 2;
   clock.traverse(o => { if (o.isMesh) o.castShadow = false; });
   room.add(clock);
@@ -225,7 +228,7 @@ function wallDecor() {
     const art = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.14, h - 0.14),
       new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(Math.random() * 0.15 + 0.05, 0.3, 0.6), roughness: 0.9 }));
     art.position.z = 0.03; f.add(art);
-    f.position.set(-HALF + 0.06, y, z); f.rotation.y = Math.PI / 2;
+    f.position.set(-HALF + DECOR_OFF, y, z); f.rotation.y = Math.PI / 2;
     room.add(f);
   });
 }
