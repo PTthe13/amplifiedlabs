@@ -271,12 +271,29 @@ function place(type, opts = {}) {
   clampToRoom(g);
   scene.add(g);
   pieces.push(g);
-  if (g.userData.light) g.userData.light.intensity = lampsOn ? 9 : 0;
+  if (g.userData.light) setLampState(g, lampsOn);
   return g;
 }
 
+// on/off for a lamp piece — kills the cast light AND dims the shade glow,
+// so toggling reads as the lamp actually switching off (not just dimmer room).
+function setLampState(g, on) {
+  if (!g.userData.light) return;
+  g.userData.light.intensity = on ? 9 : 0;
+  (g.userData.paint || []).forEach(m => { if (m.emissive) m.emissiveIntensity = on ? 1.1 : 0.04; });
+}
+
 function recolour(g, hex) {
-  (g.userData.paint || []).forEach(m => m.color.set(hex));
+  if (g.userData.light) {
+    // lamp: the swatch is the BULB colour — tint the glow + the cast light,
+    // keep the shade luminous so a dark pick never reads as "switched off".
+    const c = new THREE.Color(hex);
+    (g.userData.paint || []).forEach(m => { m.color.set(0xf6efe2); if (m.emissive) m.emissive.set(c); });
+    g.userData.light.color.set(c);
+    if (lampsOn) setLampState(g, true); // ensure glow intensity restored
+  } else {
+    (g.userData.paint || []).forEach(m => m.color.set(hex));
+  }
   g.userData.color = hex;
 }
 
@@ -375,16 +392,22 @@ addEventListener('keydown', e => {
 // UI
 // ---------------------------------------------------------------------------
 const SWATCHES = ['#24263a', '#2a2a30', '#7a5232', '#3f6b3a', '#b5482a', '#c98a55', '#8a8577', '#e9e2d2', '#1b1c22', '#3a6ea5'];
+const LAMP_SWATCHES = ['#ffd9a0', '#ffbf7a', '#ff7a3c', '#ffe8c2', '#ffffff', '#9ecbff', '#c9a0ff', '#ff9ecf']; // bulb colours
 const WALL_COLORS = ['#1a1512', '#141414', '#20262e', '#2a2320', '#3a3f52', '#e9e2d2'];
 
 const objPanel = $('#obj-controls');
 const objSwatches = $('#obj-swatches');
-SWATCHES.forEach(c => {
-  const b = document.createElement('button');
-  b.className = 'sw'; b.style.background = c;
-  b.onclick = () => { if (selected) { recolour(selected, c); saveState(); updatePanel(); } };
-  objSwatches.append(b);
-});
+// rebuilt per selection — lamps get a warm bulb palette, everything else the material palette
+function renderObjSwatches() {
+  objSwatches.innerHTML = '';
+  const cols = (selected && selected.userData.light) ? LAMP_SWATCHES : SWATCHES;
+  cols.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'sw'; b.style.background = c;
+    b.onclick = () => { if (selected) { recolour(selected, c); saveState(); updatePanel(); } };
+    objSwatches.append(b);
+  });
+}
 
 const wallSwatches = $('#wall-swatches');
 WALL_COLORS.forEach(c => {
@@ -453,8 +476,9 @@ $('#del-btn').onclick = () => { if (selected) { removePiece(selected); saveState
 $('#slat-toggle').onclick = e => { const on = !roomState.slats; setSlats(on); e.target.classList.toggle('on', on); saveState(); };
 $('#lamp-toggle').onclick = e => {
   lampsOn = !lampsOn;
-  pieces.forEach(g => { if (g.userData.light) g.userData.light.intensity = lampsOn ? 9 : 0; });
+  pieces.forEach(g => setLampState(g, lampsOn));
   e.target.classList.toggle('on', lampsOn);
+  e.target.textContent = lampsOn ? 'Lamps on' : 'Lamps off';
   roomState.lamps = lampsOn; saveState();
 };
 
@@ -489,7 +513,8 @@ $('#panel-toggle').onclick = () => $('#dock').classList.toggle('collapsed');
 function updatePanel() {
   if (selected) {
     objPanel.hidden = false;
-    $('#obj-name').textContent = selected.userData.type;
+    $('#obj-name').textContent = selected.userData.type === 'lamp' ? 'lamp · bulb colour' : selected.userData.type;
+    renderObjSwatches();
     [...objSwatches.children].forEach(c => c.classList.toggle('on', c.style.background && rgbEq(c.style.background, selected.userData.color)));
   } else {
     objPanel.hidden = true;
@@ -522,6 +547,7 @@ function applyRoomState() {
   lampsOn = roomState.lamps;
   $('#slat-toggle').classList.toggle('on', roomState.slats);
   $('#lamp-toggle').classList.toggle('on', roomState.lamps);
+  $('#lamp-toggle').textContent = roomState.lamps ? 'Lamps on' : 'Lamps off';
 }
 function boot() {
   let saved = null;

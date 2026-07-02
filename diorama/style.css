@@ -119,6 +119,8 @@ body { font-family: var(--font); color: var(--ink); -webkit-font-smoothing: anti
 }
 .reset:hover { color: var(--ink); border-color: var(--dim); }
 
+.note { font-size: 11px; line-height: 1.4; color: var(--dim); margin-top: -2px; }
+
 .obj {
   padding: 12px; border-radius: 12px;
   background: rgba(241, 102, 34, 0.06);
