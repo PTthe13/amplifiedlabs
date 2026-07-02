@@ -123,7 +123,7 @@ const dreamMat = new THREE.ShaderMaterial({
   }
   void main(){
     vec2 uv=(vUv*2.0-1.0); uv.x*=uRes.x/uRes.y;
-    vec3 ro=vec3(0.0,0.0,uTime*1.1);
+    vec3 ro=vec3(0.0,0.0,uTime*0.8);
     vec2 m=uMouse;
     vec3 rd=normalize(vec3(uv+m*0.35,1.4));
     rd.xz*=rot(m.x*0.6); rd.yz*=rot(-m.y*0.5);
@@ -136,10 +136,10 @@ const dreamMat = new THREE.ShaderMaterial({
       if(t>52.0) break;
     }
     float g=glow;
-    vec3 col=palette(g*0.9+ro.z*0.03)*g*1.9;
-    col+=vec3(0.945,0.40,0.133)*pow(g,2.6)*0.7; // orange core bloom
+    vec3 col=palette(g*0.9+ro.z*0.03)*g*1.7;
+    col+=vec3(0.945,0.40,0.133)*pow(g,2.4)*0.95; // orange core bloom
     col=col/(1.0+col); // tonemap
-    col=pow(col,vec3(1.05));
+    col=pow(col,vec3(1.22));
     float vig=1.0-0.28*dot(uv*0.62,uv*0.62);
     gl_FragColor=vec4(col*vig,1.0);
   }`,
@@ -370,7 +370,7 @@ function frame() {
   const fieldMorph = scene === 1 ? morphCycle(time, 15, 3) : 0;
 
   // camera orbit for particle scenes; anchor to the front while the wordmark forms
-  orbit += dt * 0.06;
+  orbit += dt * 0.04;
   let camAng = orbit + pointer.x * 0.5;
   let camY = pointer.y * 16 + 4, camR = 82;
   if (fieldMorph > 0) {
