@@ -231,7 +231,7 @@ function buildNeb() {
   g.setAttribute('aTarget', new THREE.BufferAttribute(tgt, 3));
   const uni = {
     uTime: { value: 0 }, uBass: { value: 0 }, uMid: { value: 0 }, uTreble: { value: 0 },
-    uLevel: { value: 0 }, uMorph: { value: 0 }, uSize: { value: MOBILE ? 1.4 : 1.7 }, uDpr: { value: DPR },
+    uLevel: { value: 0 }, uMorph: { value: 0 }, uSize: { value: MOBILE ? 1.2 : 1.5 }, uDpr: { value: DPR },
   };
   const mat = new THREE.ShaderMaterial({
     uniforms: uni, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -242,8 +242,8 @@ function buildNeb() {
     ${SNOISE}
     void main(){
       vec3 dir=normalize(position);
-      float turb=snoise(dir*2.2+uTime*0.12)*(3.0+uMid*10.0);
-      float r=20.0+uBass*16.0+turb;
+      float turb=snoise(dir*2.2+uTime*0.12)*(4.0+uMid*11.0);
+      float r=31.0+uBass*15.0+turb;
       vec3 sp=dir*r;
       sp.xz=mat2(cos(uTime*0.1),-sin(uTime*0.1),sin(uTime*0.1),cos(uTime*0.1))*sp.xz;
       vec3 pos=mix(sp,aTarget,smoothstep(0.0,1.0,uMorph));
@@ -259,7 +259,7 @@ function buildNeb() {
       if(r>0.25) discard;
       float a=exp(-r*6.5);
       vec3 col=palette(vGlow*0.6+vSeed*0.3+0.1);
-      gl_FragColor=vec4(col*(0.35+vGlow*0.7),a*0.17);
+      gl_FragColor=vec4(col*(0.35+vGlow*0.7),a*0.10);
     }`,
   });
   return new THREE.Points(g, mat);
@@ -397,9 +397,6 @@ function frame() {
     const u = neb.material.uniforms;
     u.uTime.value = time;
     u.uBass.value = audio.bass; u.uMid.value = audio.mid; u.uTreble.value = audio.treble; u.uLevel.value = audio.level;
-    // flash the wordmark on strong beats
-    const beat = audio.bass > 0.62 ? 1 : 0;
-    u.uMorph.value += ((beat ? 0.9 : 0) - u.uMorph.value) * (beat ? 0.35 : 0.06);
     renderer.render(nebScene, persp);
   }
 }
