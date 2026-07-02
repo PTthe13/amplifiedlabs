@@ -3,11 +3,14 @@ import { ProceduralAudio } from './audio.js';
 
 /* ============================================================= boot */
 const canvas = document.getElementById('c');
+const _hasWebGL2 = !!document.createElement('canvas').getContext('webgl2');
 let renderer;
-try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', alpha: false });
-} catch (e) {}
-if (!renderer || !renderer.capabilities.isWebGL2) {
+if (_hasWebGL2) {
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', alpha: false });
+  } catch (e) {}
+}
+if (!renderer) {
   document.getElementById('loader').classList.add('gone');
   document.getElementById('nowebgl').hidden = false;
   throw new Error('no webgl2');
