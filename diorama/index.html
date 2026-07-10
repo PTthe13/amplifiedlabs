@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
   <script type="importmap">
   {
     "imports": {
@@ -56,6 +56,11 @@
         <button class="mini" id="rotate-btn">Rotate</button>
         <button class="mini" id="dup-btn">Duplicate</button>
         <button class="mini danger" id="del-btn">Remove</button>
+      </div>
+      <div class="tv-media" id="tv-media" hidden>
+        <button class="mini accent" id="tv-choose">▶ Choose image / video</button>
+        <button class="mini" id="tv-clear">Clear</button>
+        <input type="file" id="tv-file" accept="image/*,video/*" hidden>
       </div>
     </section>
 
@@ -117,6 +122,6 @@
     <span>· Made by amplified® · <a href="https://github.com/PTthe13/amplifiedlabs/tree/main/diorama">source</a> · MIT</span>
   </footer>
 
-  <script type="module" src="./app.js?v=5"></script>
+  <script type="module" src="./app.js?v=6"></script>
 </body>
 </html>

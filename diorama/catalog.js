@@ -233,9 +233,37 @@ function shelf() {
   return g;
 }
 
+function tv() {
+  const g = new THREE.Group();
+  const cab   = mat(0x141319, { rough: 0.4, metal: 0.2 });  // media console body
+  const frame = mat(0x0c0c10, { rough: 0.4, metal: 0.3 });  // tv bezel + pedestal
+
+  // low media console
+  g.add(M(rbox(3.4, 0.5, 0.56, 0.05), cab, 0, 0.3, 0));
+  g.add(M(rbox(0.02, 0.36, 0.01), mat(0x2c2d33), 0, 0.3, 0.285)); // door seam
+  for (const x of [-1.5, 1.5]) g.add(M(rbox(0.12, 0.12, 0.5, 0.03), frame, x, 0.06, 0)); // plinth feet
+
+  // pedestal + big flat panel sitting on the console
+  const bezelY = 1.62;
+  g.add(M(rbox(0.9, 0.05, 0.4, 0.02), frame, 0, 0.56, -0.02));   // pedestal base
+  g.add(M(rbox(0.5, 0.16, 0.26, 0.03), frame, 0, 0.64, -0.02));  // neck
+  g.add(M(rbox(3.24, 1.86, 0.1, 0.04), frame, 0, bezelY, -0.04)); // bezel
+
+  // screen — MeshBasic so loaded media shows true-colour and bright (reads as a lit panel)
+  const screenMat = new THREE.MeshBasicMaterial({ color: 0x0a0b12 });
+  const screen = M(new THREE.PlaneGeometry(3.02, 1.66), screenMat, 0, bezelY, 0.015);
+  screen.userData.noShadow = true;
+  g.add(screen);
+  // standby dot
+  g.add(M(new THREE.CircleGeometry(0.016, 10), new THREE.MeshBasicMaterial({ color: 0xf16622 }), 1.5, 0.68, 0.05));
+
+  g.userData = { type: 'tv', footprint: { w: 3, d: 1 }, paint: [cab, frame], screen, screenMat };
+  return g;
+}
+
 // ---- registry --------------------------------------------------------------
 
-export const FACTORIES = { sofa, lamp: floorLamp, table: coffeeTable, plant, desk, chair, cabinet, shelf };
+export const FACTORIES = { sofa, lamp: floorLamp, table: coffeeTable, plant, desk, chair, cabinet, shelf, tv };
 
 export const CATALOG = [
   { type: 'sofa', label: 'Sofa' },
@@ -246,6 +274,7 @@ export const CATALOG = [
   { type: 'chair', label: 'Chair' },
   { type: 'cabinet', label: 'Cabinet' },
   { type: 'shelf', label: 'Shelf' },
+  { type: 'tv', label: 'TV' },
 ];
 
 // default arrangement — approximates the reference render.
@@ -266,7 +295,7 @@ export function build(type) {
   if (!fn) return null;
   const g = fn();
   g.traverse(o => {
-    if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+    if (o.isMesh && !o.userData.noShadow) { o.castShadow = true; o.receiveShadow = true; }
   });
   return g;
 }

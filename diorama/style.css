@@ -112,6 +112,9 @@ body { font-family: var(--font); color: var(--ink); -webkit-font-smoothing: anti
 
 .note { font-size: 11px; line-height: 1.4; color: var(--dim); margin-top: -2px; }
 
+.tv-media { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.tv-media #tv-choose { flex: 1; }
+
 .mini.accent { background: var(--orange); border-color: var(--orange); color: #0a0806; font-weight: 600; }
 .mini.accent:hover { background: #ff7a3c; border-color: #ff7a3c; }
 

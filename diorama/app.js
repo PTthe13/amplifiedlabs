@@ -8,7 +8,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { build, CATALOG, DEFAULT_LAYOUT } from './catalog.js?v=2';
+import { build, CATALOG, DEFAULT_LAYOUT } from './catalog.js?v=3';
 
 const ROOM = 10;          // floor is ROOM x ROOM, centred on origin
 const HALF = ROOM / 2;
@@ -298,10 +298,42 @@ function recolour(g, hex) {
 }
 
 function removePiece(g) {
+  clearTvMedia(g);               // release any playing video / blob URL
   scene.remove(g);
   pieces.splice(pieces.indexOf(g), 1);
   g.traverse(o => { if (o.isMesh) { o.geometry.dispose(); } });
   if (selected === g) select(null);
+}
+
+// ---- TV screen media (local image/video → screen texture) ----------------
+function clearTvMedia(g) {
+  const d = g.userData;
+  if (d._video) { try { d._video.pause(); } catch (_) {} d._video = null; }
+  if (d._mediaUrl) { URL.revokeObjectURL(d._mediaUrl); d._mediaUrl = null; }
+  if (d.screenMat) {
+    if (d.screenMat.map) d.screenMat.map.dispose();
+    d.screenMat.map = null; d.screenMat.color.set(0x0a0b12); d.screenMat.needsUpdate = true;
+  }
+}
+function setTvMedia(g, file) {
+  const d = g.userData;
+  if (!d.screenMat) return;
+  clearTvMedia(g);
+  const url = URL.createObjectURL(file);
+  d._mediaUrl = url;
+  const apply = tex => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    d.screenMat.map = tex; d.screenMat.color.set(0xffffff); d.screenMat.needsUpdate = true;
+  };
+  if (file.type.startsWith('video')) {
+    const v = document.createElement('video');
+    v.src = url; v.loop = true; v.muted = true; v.playsInline = true; v.autoplay = true;
+    v.play().catch(() => {});
+    d._video = v;
+    apply(new THREE.VideoTexture(v));
+  } else {
+    new THREE.TextureLoader().load(url, apply);
+  }
 }
 
 function loadLayout(layout) {
@@ -473,6 +505,16 @@ $('#dup-btn').onclick = () => {
 };
 $('#del-btn').onclick = () => { if (selected) { removePiece(selected); saveState(); } };
 
+// TV media picker
+const tvFile = $('#tv-file');
+$('#tv-choose').onclick = () => tvFile.click();
+$('#tv-clear').onclick = () => { if (selected && selected.userData.type === 'tv') clearTvMedia(selected); };
+tvFile.onchange = e => {
+  const f = e.target.files[0];
+  if (f && selected && selected.userData.type === 'tv') setTvMedia(selected, f);
+  e.target.value = '';
+};
+
 $('#slat-toggle').onclick = e => { const on = !roomState.slats; setSlats(on); e.target.classList.toggle('on', on); saveState(); };
 $('#lamp-toggle').onclick = e => {
   lampsOn = !lampsOn;
@@ -550,6 +592,7 @@ function updatePanel() {
     $('#obj-name').textContent = selected.userData.type === 'lamp' ? 'lamp · bulb colour' : selected.userData.type;
     renderObjSwatches();
     [...objSwatches.children].forEach(c => c.classList.toggle('on', c.style.background && rgbEq(c.style.background, selected.userData.color)));
+    $('#tv-media').hidden = selected.userData.type !== 'tv';
   } else {
     objPanel.hidden = true;
   }
