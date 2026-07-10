@@ -8,7 +8,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { build, CATALOG, DEFAULT_LAYOUT } from './catalog.js?v=3';
+import { build, CATALOG, DEFAULT_LAYOUT } from './catalog.js?v=4';
 
 const ROOM = 10;          // floor is ROOM x ROOM, centred on origin
 const HALF = ROOM / 2;
@@ -198,7 +198,7 @@ const trimMat = new THREE.MeshStandardMaterial({ color: 0x0c0a08, roughness: 0.8
 const rugMat = new THREE.MeshStandardMaterial({ roughness: 0.9, map: rugTexture(RUG_PRESETS.ember) });
 const rug = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 3.4), rugMat);
 rug.rotation.x = -Math.PI / 2;
-rug.position.set(1.2, 0.01, 1.4);
+rug.position.set(-1.0, 0.01, -0.6);
 rug.receiveShadow = true;
 room.add(rug);
 

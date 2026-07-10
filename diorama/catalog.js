@@ -254,6 +254,11 @@ function tv() {
   const screen = M(new THREE.PlaneGeometry(3.02, 1.66), screenMat, 0, bezelY, 0.015);
   screen.userData.noShadow = true;
   g.add(screen);
+  // default screen content (bundled Pexels image — free licence, no attribution required)
+  new THREE.TextureLoader().load('./assets/tv-default.jpg', tex => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    screenMat.map = tex; screenMat.color.set(0xffffff); screenMat.needsUpdate = true;
+  });
   // standby dot
   g.add(M(new THREE.CircleGeometry(0.016, 10), new THREE.MeshBasicMaterial({ color: 0xf16622 }), 1.5, 0.68, 0.05));
 
@@ -280,14 +285,18 @@ export const CATALOG = [
 // default arrangement — approximates the reference render.
 // x,z in world units (room spans -5..5). rot in radians. color optional hex.
 export const DEFAULT_LAYOUT = [
-  { type: 'shelf', x: 0.6, z: -4.4, rot: 0 },
-  { type: 'cabinet', x: -1.8, z: -4.35, rot: 0 },
-  { type: 'sofa', x: -3.1, z: -0.6, rot: Math.PI / 2, color: '#7a4a32' },
-  { type: 'lamp', x: -4.2, z: 1.7 },
-  { type: 'table', x: -2.9, z: 1.4, rot: 0 },
-  { type: 'plant', x: -0.3, z: -3.6 },
-  { type: 'desk', x: 1.4, z: 1.0, rot: Math.PI },
-  { type: 'chair', x: 1.4, z: 2.1, rot: 0 },
+  // back wall: TV centre-left, tall shelf right, plant in the corner
+  { type: 'tv', x: -1.0, z: -4.3, rot: 0 },
+  { type: 'shelf', x: 3.1, z: -4.4, rot: 0 },
+  { type: 'plant', x: -4.2, z: -4.0 },
+  // living area facing the TV
+  { type: 'sofa', x: -1.0, z: 0.4, rot: Math.PI, color: '#7a4a32' },
+  { type: 'table', x: -1.0, z: -1.6, rot: 0 },
+  { type: 'lamp', x: -4.2, z: -1.4 },
+  { type: 'cabinet', x: -4.35, z: 1.7, rot: Math.PI / 2 },
+  // workspace on the open right side
+  { type: 'desk', x: 3.1, z: 1.1, rot: -Math.PI / 2 },
+  { type: 'chair', x: 2.2, z: 1.1, rot: -Math.PI / 2 },
 ];
 
 export function build(type) {
