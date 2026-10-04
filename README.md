@@ -24,6 +24,7 @@ Each folder is a self-contained piece — generative art, shaders, utility scrip
 | [`diorama`](./diorama) | An isometric cutaway room rendered in real time. Drag furniture across a snap grid, recolour any piece, re-skin the walls (paint or wood slats), swap floor and rug, and change the whole mood with one click. Fully procedural — no models, no textures, no build step. | Three.js · WebGL · Orthographic · Postprocessing |
 | [`resonance`](./resonance) | A real-time WebGL2 experience in three scenes — a raymarched gyroid dreamscape, a 340k-particle curl-noise field, and an audio-reactive nebula (five procedurally-synthesised tracks) — each of which periodically reforms into the amplified® wordmark. | Three.js · WebGL2 · GLSL · Web Audio API |
 | [`radar`](./radar) | Where Portugal's public sector is buying: every tender from BASE, Diário da República and TED, searchable by sector and district, on a map of Portugal drawn in ridge lines whose peaks reshape with each filter. | SVG · Canvas 2D · vanilla JS · Natural Earth |
+| [`cybersickness`](./cybersickness) | Queasy Street: a test bench for cybersickness. Start at zero on a quiet street and find what breaks it — camera motion, a car reversing beside you, sound, eye height, frame rate, tracking delay, a 0.2 Hz sway. Every condition cites its study; rate how you feel (MISC), profile yourself (MSSQ-short), and get evidence-based tips for real VR. | Three.js · WebXR · Web Audio API · Kenney CC0 |
 
 ## Branding
 

@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Queasy Street: a test bench for cybersickness. Change camera motion, sound, eye height and more, one condition at a time, and watch the reading.">
+<title>Queasy Street</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"}}</script>
+<style>
+/* Layout: the street fills the stage; a clinical test sheet sits beside it,
+   with the nausea reading drawn as a trace on ECG paper. One look, light paper. */
+:root{
+  --paper:#ebeae4;      /* sheet ground, faint green-grey like lab forms */
+  --paper-2:#f4f3ee;    /* raised fields */
+  --ink:#151613;        /* text, selected cells */
+  --muted:#5b5d56;      /* secondary text (≥4.5:1 on paper) */
+  --rule:#c3c2b8;       /* hairlines */
+  --grid:#efc7b3;       /* ECG paper grid */
+  --grid-2:#e3a283;
+  --signal:#e2581a;     /* brand orange, a touch deeper for paper */
+  --warn:#9a5a00; --bad:#b02a14;
+  --display:'Archivo',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--display);font-size:15px;font-variation-settings:'wdth' 100}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:minmax(0,1fr);height:100%;height:100dvh;overflow:hidden}   /* one screen: only the sheet scrolls */
+.stage{position:relative;overflow:hidden;background:#9fb3c2;touch-action:none;cursor:grab}
+.stage:active{cursor:grabbing}
+#gl{display:block;width:100%;height:100%}
+.vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 62% 58% at 50% 50%,rgba(0,0,0,0) 55%,rgba(8,9,8,.97) 100%);opacity:0;transition:opacity .25s linear}
+.rest{position:absolute;inset:0;pointer-events:none}
+.rest[hidden]{display:none}
+.nose{position:absolute;left:50%;bottom:0;width:30%;max-width:360px;transform:translateX(-50%);pointer-events:none;opacity:.55;filter:blur(7px)}
+.nose svg{display:block;width:100%}
+.ev{display:inline-block;font:500 9.5px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;padding:3px 5px;border:1px solid currentColor;vertical-align:2px;margin-left:4px;white-space:nowrap}
+.ev-strong{color:#1f6b3a}.ev-moderate{color:#2c5d86}.ev-limited{color:#8a5a00}.ev-untested{color:var(--bad)}
+.why cite a{color:inherit}
+.cond .name small{font:400 11px/1 var(--mono);color:var(--muted)}
+.rest .hz{position:absolute;left:0;right:0;top:50%;height:0;border-top:1.5px solid rgba(255,255,255,.75)}
+.rest .hz::before,.rest .hz::after{content:"";position:absolute;top:-7px;width:2px;height:14px;background:rgba(255,255,255,.85)}
+.rest .hz::before{left:calc(50% - 60px)}.rest .hz::after{left:calc(50% + 58px)}
+.rest .fr{position:absolute;inset:14px;border:1.5px solid rgba(255,255,255,.55)}
+
+.logo{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:16px;z-index:3;display:inline-flex;align-items:center;gap:.32em;font:800 19px/1 var(--display);font-variation-settings:'wdth' 100;letter-spacing:-.035em;color:#fff;text-decoration:none;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.logo .dot{width:.5em;height:.5em;border-radius:50%;background:#f16622}
+.logo .r{font:italic 400 .55em/1 Georgia,serif;vertical-align:.6em;margin-left:.02em}
+.logo:focus-visible{outline:2px solid #fff;outline-offset:4px}
+
+.go-btn{position:absolute;z-index:3;left:50%;bottom:20px;transform:translateX(-50%);font:600 14px/1 var(--display);padding:16px 22px;min-height:48px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
+.go-btn:active{background:var(--ink);color:var(--paper)}
+.gauge{position:absolute;z-index:2;background:rgba(244,243,238,.92);border:1px solid var(--rule);padding:8px 10px 6px;font:500 10px/1.2 var(--mono);color:var(--muted);letter-spacing:.04em}
+.gauge b{color:var(--ink);font-weight:500}
+.gauge svg{display:block}
+.g-height{left:16px;bottom:16px}
+.g-audio{right:16px;bottom:16px}
+.g-speed{right:16px;top:14px;display:flex;gap:14px}
+
+.start{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(21,22,19,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);cursor:pointer}
+.start .card{cursor:default}
+.start .hint{position:absolute;left:0;right:0;bottom:18px;text-align:center;font:500 11px/1 var(--mono);letter-spacing:.08em;color:#f4f3ee;text-transform:uppercase}
+.start[hidden]{display:none}
+.card{background:var(--paper);max-width:440px;padding:22px 24px 20px;border:1px solid var(--ink)}
+.card h1{margin:0;font-size:46px;line-height:.95;font-weight:800;font-variation-settings:'wdth' 72;letter-spacing:-.01em;text-transform:uppercase;text-wrap:balance}
+.card p{margin:12px 0 0;line-height:1.45;color:var(--muted);max-width:52ch}
+.card .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.btn{font:600 14px/1 var(--display);font-variation-settings:'wdth' 100;border:1px solid var(--ink);background:var(--ink);color:var(--paper);padding:13px 16px;min-height:44px;cursor:pointer;border-radius:0}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.rm-note{margin:10px 0 0;padding:8px 10px;border:1px solid var(--signal);font-size:13px;line-height:1.4;color:var(--ink)}
+.card small{display:block;margin-top:12px;font:400 11px/1.4 var(--mono);color:var(--muted)}
+
+/* ── the sheet ── */
+.sheet{border-left:1px solid var(--ink);overflow:auto;overscroll-behavior:contain;min-height:0;display:flex;flex-direction:column}
+.sh-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:14px 20px 12px;border-bottom:1px solid var(--ink)}
+.sh-head h2{margin:0;font-size:22px;font-weight:800;font-variation-settings:'wdth' 72;text-transform:uppercase;letter-spacing:.01em}
+.sh-head span{font:400 11px/1 var(--mono);color:var(--muted)}
+.sh-head b{font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.presets{display:flex;flex-wrap:wrap;gap:6px;padding:10px 20px;border-bottom:1px solid var(--ink)}
+.pre{font:500 12px/1 var(--display);font-variation-settings:'wdth' 92;padding:9px 11px;min-height:34px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;border-radius:0}
+.pre:hover{background:var(--paper-2)}
+.pre-end{background:var(--ink);color:var(--paper)}.pre-end:hover{background:#000}
+.report{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(21,22,19,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.report[hidden]{display:none}
+.report .card{max-width:620px;max-height:calc(100% - 20px);overflow:auto}
+.rp-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.rp-stats div{border:1px solid var(--ink);padding:10px}
+.rp-stats b{display:block;font:800 30px/1 var(--display);font-variation-settings:'wdth' 62}
+.rp-stats span{font:400 10px/1.3 var(--mono);color:var(--muted);text-transform:uppercase}
+.rp-tips{margin:14px 0 0;padding-left:18px;display:grid;gap:9px;font-size:14px;line-height:1.45}
+.rp-tips cite{display:block;font:normal 400 11px/1.4 var(--mono);color:var(--muted)}
+.pre:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.reading{padding:14px 20px 12px;border-bottom:1px solid var(--ink)}
+.rd-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.rd-label{font:500 11px/1.3 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.rd-num{font:800 74px/.85 var(--display);font-variation-settings:'wdth' 62;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.rd-word{font:700 24px/1 var(--display);font-variation-settings:'wdth' 80;text-transform:uppercase;text-align:right}
+.rd-target{font:400 11px/1.4 var(--mono);color:var(--muted);text-align:right;margin-top:4px}
+#strip{display:block;width:100%;height:120px;margin-top:12px;background:#fbf4ef;border:1px solid var(--grid-2)}
+.legend{display:flex;gap:14px;margin-top:6px;font:400 10px/1 var(--mono)}
+.lg-est{color:var(--ink)}.lg-you{color:var(--signal)}
+.misc{border:0;margin:12px 0 0;padding:0}
+.misc legend{font:700 13px/1.3 var(--display);font-variation-settings:'wdth' 90;padding:0;margin-bottom:6px}
+.misc legend small{font:400 11px/1 var(--mono);color:var(--muted)}
+.misc-row{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px}
+.misc-row button{font:500 12px/1 var(--mono);min-height:30px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;padding:0}
+.misc-row button:hover{background:var(--paper-2)}
+.misc-row button[aria-pressed="true"]{background:var(--signal);border-color:var(--signal);color:#fff}
+.misc-row button:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.misc-say{margin:6px 0 0;font-size:12.5px;line-height:1.4;color:var(--muted);min-height:2.8em}
+.strip-axis{display:flex;justify-content:space-between;font:400 10px/1 var(--mono);color:var(--muted);margin-top:4px}
+
+.conds{margin:0;padding:0;list-style:none}
+.cond{border:0;border-bottom:1px solid var(--rule);margin:0;padding:10px 20px 11px;display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:8px}
+.cond legend{display:contents}
+.code{grid-row:1 / span 2;font:500 11px/20px var(--mono);color:var(--muted)}
+.cond .name{font:700 14px/20px var(--display);font-variation-settings:'wdth' 90}
+.opts{position:relative;grid-column:2;display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.opts input{position:absolute;opacity:0;pointer-events:none}
+.opts label{font:500 13px/1 var(--display);font-variation-settings:'wdth' 92;padding:9px 11px;min-height:34px;display:flex;align-items:center;gap:7px;cursor:pointer;border:1px solid var(--ink);white-space:nowrap;background:transparent}
+.opts label:hover{background:var(--paper-2)}
+.opts input:checked + label,.opts input:checked + label:hover{background:var(--ink);color:var(--paper)}
+.opts input:focus-visible + label{outline:2px solid var(--signal);outline-offset:2px}
+/* combinable options carry a tick box, so it reads as "pick several" */
+.opts.multi label::before{content:"";width:9px;height:9px;border:1.5px solid currentColor;flex:none}
+.opts.multi input:checked + label::before{background:currentColor;box-shadow:inset 0 0 0 2px var(--ink)}
+.cond.active{background:var(--paper-2)}
+.why{grid-column:2;margin:8px 0 0;font-size:13.5px;line-height:1.45;max-width:60ch}
+.why cite{display:block;font:normal 400 11px/1.4 var(--mono);color:var(--muted);margin-top:4px}
+.why[hidden]{display:none}
+.drv{grid-column:2;font:400 11px/1 var(--mono);color:var(--muted);margin-top:6px}
+.drv b{font-weight:500}
+.drv .up{color:var(--bad)}.drv .dn{color:#2c5d86}
+
+.asd{border-top:1px solid var(--ink);padding:12px 20px 4px}
+.pf-out{font:400 11px/1 var(--mono);color:var(--muted);margin-left:6px}.pf-out b{font-weight:500;color:var(--ink)}
+.mssq{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 8px;align-items:center;margin-top:10px;font-size:13px}
+.mssq .h{font:500 10px/1.2 var(--mono);color:var(--muted);text-transform:uppercase}
+.mssq select{font:400 12px/1 var(--display);padding:5px 4px;border:1px solid var(--ink);background:var(--paper-2);color:var(--ink);border-radius:0;max-width:118px}
+.pf-say{font-size:13px}
+.formula{font:500 12px/1.5 var(--mono)!important;color:var(--ink)!important;padding:8px 10px;background:var(--paper-2)}
+.refs{margin:10px 0 0;padding-left:20px;display:grid;gap:8px;font-size:12px;line-height:1.45;color:var(--ink)}
+.refs a{color:inherit;word-break:break-all}
+.asd summary{font:700 14px/1.3 var(--display);font-variation-settings:'wdth' 90;cursor:pointer;padding:4px 0;list-style-position:outside}
+.asd summary:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.asd p{margin:8px 0 0;font-size:13.5px;line-height:1.45;color:var(--muted);max-width:62ch}
+.asd ul{margin:10px 0 0;padding-left:18px;display:grid;gap:10px}
+.asd li{font-size:13.5px;line-height:1.45;max-width:62ch}
+.asd cite{display:block;font:normal 400 11px/1.4 var(--mono);color:var(--muted);margin-top:3px}
+.sh-foot{padding:14px 20px 20px;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.sh-foot a{color:var(--ink)}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto;height:auto;overflow:visible}
+  .stage{height:58vh;min-height:340px}
+  .sheet{border-left:0;border-top:1px solid var(--ink);overflow:visible}
+  .card h1{font-size:36px}
+  .g-audio{display:none}
+}
+.loading{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:var(--paper)}
+.loading[hidden]{display:none}
+.ld{width:min(360px,80%);font:500 11px/1.4 var(--mono);color:var(--muted);letter-spacing:.04em}
+.ld b{display:block;font:800 40px/1 var(--display);font-variation-settings:'wdth' 62;color:var(--ink);letter-spacing:0;margin-bottom:10px;text-transform:uppercase}
+.ld .bar{height:2px;background:var(--rule);margin:12px 0 8px}
+.ld .bar i{display:block;height:2px;width:0;background:var(--ink);transition:width .2s}
+@media (prefers-reduced-motion:reduce){.vig{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <section class="stage" id="stage" aria-label="Street scene">
+    <canvas id="gl"></canvas>
+    <div class="vig" id="vig"></div>
+    <div class="rest" id="rest" hidden><div class="fr"></div><div class="hz"></div></div>
+    <div class="nose" id="nose" hidden><svg viewBox="0 0 400 220" aria-hidden="true"><path d="M150 220 C160 150 175 60 200 0 C225 60 240 150 250 220 Z" fill="#c99a7c"></path><path d="M120 220 C130 180 160 165 200 170 C240 165 270 180 280 220 Z" fill="#b8866a"></path></svg></div>
+    <a class="logo" href="https://amplifiedcreations.com" target="_blank" rel="noopener" aria-label="amplified creations"><span class="dot" aria-hidden="true"></span><span>amplified<span class="r">®</span></span></a>
+
+    <button type="button" class="go-btn" id="go-btn" hidden>Hold to move</button>
+    <div class="gauge g-speed" aria-live="off">
+      <span>SPEED <b id="o-speed">0.0</b> km/h</span>
+      <span>EYE <b id="o-eye">1.60</b> m</span>
+      <span>RENDER <b id="o-fps">—</b> fps</span>
+    </div>
+
+    <figure class="gauge g-height" style="margin:0">
+      <svg width="132" height="96" viewBox="0 0 132 96" aria-label="Camera height against your eye height">
+        <line x1="4" y1="88" x2="128" y2="88" stroke="#151613" stroke-width="1"></line>
+        <g id="fig-seated">
+          <rect x="22" y="62" width="24" height="4" fill="#151613"></rect>
+          <rect x="42" y="66" width="3" height="22" fill="#151613"></rect>
+          <rect x="23" y="66" width="3" height="22" fill="#151613"></rect>
+          <circle cx="30" cy="38" r="6" fill="#151613"></circle>
+          <rect x="26" y="45" width="9" height="18" fill="#151613"></rect>
+          <rect x="30" y="58" width="16" height="6" fill="#151613"></rect>
+          <rect x="42" y="60" width="5" height="26" fill="#151613"></rect>
+        </g>
+        <g id="fig-standing" style="display:none">
+          <circle cx="32" cy="17" r="6" fill="#151613"></circle>
+          <rect x="27" y="24" width="10" height="30" fill="#151613"></rect>
+          <rect x="27" y="54" width="4" height="34" fill="#151613"></rect>
+          <rect x="33" y="54" width="4" height="34" fill="#151613"></rect>
+        </g>
+        <line id="eye-line" x1="20" x2="122" y1="38" y2="38" stroke="#151613" stroke-dasharray="2 2"></line>
+        <g id="cam-mark" transform="translate(96 30)">
+          <rect x="-9" y="-6" width="16" height="12" fill="#e2581a"></rect>
+          <polygon points="7,-4 13,-7 13,7 7,4" fill="#e2581a"></polygon>
+        </g>
+      </svg>
+      <figcaption>YOU <b id="o-you">1.20</b> · CAMERA <b id="o-cam">1.60</b> · Δ <b id="o-delta">+0.40</b></figcaption>
+    </figure>
+
+    <figure class="gauge g-audio" style="margin:0">
+      <svg width="112" height="96" viewBox="0 0 112 96" aria-label="Where the car is, and where you hear it">
+        <defs><clipPath id="a-clip"><circle cx="56" cy="56" r="34"></circle></clipPath></defs>
+        <g clip-path="url(#a-clip)"><g id="a-street">
+          <rect id="a-road" x="0" y="-60" width="10" height="232" fill="#d6d4cc"></rect>
+          <line id="a-kerb-l" x1="0" y1="-60" x2="0" y2="172" stroke="#8d8f88" stroke-width="1"></line>
+          <line id="a-kerb-r" x1="0" y1="-60" x2="0" y2="172" stroke="#8d8f88" stroke-width="1"></line>
+          <line id="a-centre" x1="0" y1="-60" x2="0" y2="172" stroke="#8d8f88" stroke-width="1" stroke-dasharray="3 3"></line>
+        </g></g>
+        <circle cx="56" cy="56" r="34" fill="none" stroke="#c3c2b8"></circle>
+        <circle cx="56" cy="56" r="7" fill="#151613"></circle>
+        <polygon points="52,50 60,50 56,43" fill="#151613"></polygon>
+        <g clip-path="url(#a-clip)" id="a-marks"></g>
+        <circle id="a-hear" cx="0" cy="0" r="7" fill="none" stroke="#e2581a" stroke-width="2"></circle>
+      </svg>
+      <figcaption>■ CARS · ● PEOPLE · <span style="color:#e2581a">○</span> HEARD · <b id="o-snd">IN SYNC</b></figcaption>
+    </figure>
+
+    <div class="loading" id="loading" role="status">
+      <div class="ld"><b>Queasy Street</b>Building the street: houses, trees, cars and people. About 5 MB.
+        <div class="bar"><i id="ld-bar"></i></div><span id="ld-txt">Loading 0%</span></div>
+    </div>
+    <div class="report" id="report" hidden role="dialog" aria-labelledby="rp-title">
+      <div class="card">
+        <h1 id="rp-title">Your session</h1>
+        <div class="rp-stats" id="rp-stats"></div>
+        <p id="rp-peak"></p>
+        <h2 style="margin:16px 0 0;font-size:16px">What to try in real VR</h2>
+        <ol class="rp-tips" id="rp-tips"></ol>
+        <div class="row"><button class="btn" id="rp-close" type="button">Keep exploring</button><button class="btn ghost" id="rp-reset" type="button">Start over at zero</button></div>
+        <small>Tips come from the studies listed under All sources. If you feel unwell now, stop and rest: most people recover within half an hour.</small>
+      </div>
+    </div>
+    <div class="start" id="start">
+      <div class="card">
+        <h1>Queasy Street</h1>
+        <p>A test bench for cybersickness. You start at zero: a still camera on a quiet street. Change one condition at a time and find what breaks it, tap how you feel as you go, then press Finish for tips you can use in real VR. Every condition links to its source.</p>
+        <div class="row">
+          <button class="btn" id="go" type="button" disabled>Start with sound</button>
+          <button class="btn ghost" id="go-vr" type="button" hidden>Enter VR</button>
+        </div>
+        <small>In a headset these effects are real. Take it off the moment you feel unwell.</small>
+        <p class="rm-note" id="rm-note" hidden>Your device asks for reduced motion. This page is built to cause motion discomfort on purpose, so start with the camera still and add one condition at a time.</p>
+      </div>
+      <div class="hint">Click or tap anywhere to start</div>
+    </div>
+  </section>
+
+  <aside class="sheet" aria-label="Test sheet">
+    <div class="sh-head"><h2>Test sheet</h2><span>In the street <b id="o-time">0:00</b></span></div>
+    <div class="presets">
+      <button type="button" class="pre" id="pre-zero">Back to zero</button>
+      <button type="button" class="pre" id="pre-comfort">Comfort recipe</button>
+      <button type="button" class="pre" id="pre-worst">Worst case</button>
+      <button type="button" class="pre pre-end" id="pre-end">Finish &amp; get my tips</button>
+    </div>
+    <div class="reading">
+      <div class="rd-top">
+        <div>
+          <div class="rd-label">Nausea index · estimate</div>
+          <div class="rd-num" id="rd-num">0</div>
+        </div>
+        <div>
+          <div class="rd-word" id="rd-word">Settled</div>
+          <div class="rd-target" id="rd-target">heading to 0</div>
+        </div>
+      </div>
+      <canvas id="strip" aria-label="Nausea index over the last 90 seconds"></canvas>
+      <div class="strip-axis"><span>−90 s</span><span>−60 s</span><span>−30 s</span><span>now</span></div>
+      <div class="legend"><span class="lg-est">— estimate</span><span class="lg-you">— you (MISC × 10)</span></div>
+      <fieldset class="misc" id="misc">
+        <legend>How do you feel right now? <small>tap a number whenever it changes</small></legend>
+        <div class="misc-row" id="misc-row"></div>
+        <p class="misc-say" id="misc-say">Not rated yet. Your own answers are drawn on the chart next to the estimate.</p>
+      </fieldset>
+    </div>
+    <form class="conds" id="conds" onsubmit="return false"></form>
+    <details class="asd" id="profile">
+      <summary>You: motion-sickness profile <span class="pf-out">index <b id="o-profile">not set</b></span></summary>
+      <p>Nine questions from the Motion Sickness Susceptibility Questionnaire (MSSQ-short). How often did each make you feel sick or nauseated? Answer for your childhood (before 12) and for the last 10 years. People who get sick in cars and boats tend to get sick in VR too.</p>
+      <div class="mssq" id="mssq"></div>
+      <p class="pf-say" id="pf-say">Answer all 18 to personalise the index.</p>
+      <cite>Golding, 2006 · Golding, Rafiq &amp; Keshavarz, 2021 · <a href="#refs" class="to-refs">all sources</a></cite>
+    </details>
+    <details class="asd" id="how">
+      <summary>How the index works</summary>
+      <p>The index is a teaching model, not a measurement. It adds up points for conditions that make people sick, then takes a share off for each condition that helps, then scales by your profile and your time in the street.</p>
+      <p class="formula">index = (sum of points) × (1 − each help) × your profile × time</p>
+      <ul>
+        <li><b>Points and percentages are ours.</b> The research tells us the direction and roughly how strong each effect is, not exact numbers that add up. We set larger weights where the evidence is strong and small ones where it is weak.</li>
+        <li><b>Time.</b> Sickness grows with time in a headset, roughly in a straight line, and falls with repeated sessions (Kennedy et al., 2000). We add 3% a minute, up to 60%.</li>
+        <li><b>Recovery.</b> After exposure, sickness fades at about the rate it built up (Bos et al., 2005). Most people feel better within half an hour; some feel it for hours (Dużmańska et al., 2018).</li>
+        <li><b>Your own answer beats the estimate.</b> The orange line on the chart is you, on the Misery Scale used in motion-sickness research (Bos et al., 2005). If it disagrees with the estimate, believe it.</li>
+      </ul>
+    </details>
+    <details class="asd" id="refs">
+      <summary>All sources</summary>
+      <ol class="refs" id="refs-list"></ol>
+    </details>
+    <details class="asd" id="asd">
+      <summary>Autistic users: what the research says</summary>
+      <p>Research on VR comfort for autistic people is thin, and none of it gives numbers we could put into the index. So the index does not change for autism. These are the findings we could verify, next to the conditions they touch.</p>
+      <ul>
+        <li><b>C5 Sound, C6 Sudden loud noise.</b> In a survey of 4,104 autistic people, 60% had auditory over-responsivity at the time and 71% had had it at some point. A sudden horn or a soundtrack that does not fit can be far more than a startle.<cite>Carson et al., 2022 · Journal of Autism and Developmental Disorders</cite></li>
+        <li><b>C1 Camera motion, C4 Movement around you.</b> When a field of dots rushed toward them, autistic children swayed much less than children with Asperger syndrome or typical children. Reactions to visual motion can differ, so the train illusion may land differently. The study did not measure sickness.<cite>Gepner &amp; Mestre, 2002 · Journal of Autism and Developmental Disorders</cite></li>
+        <li><b>Every condition.</b> Documented adverse effects of headset VR include cybersickness, anxiety and sensory disturbances, and the authors note that research on these effects in autistic users is largely absent. They recommend planning sessions to minimise them.<cite>Schmidt, Newbutt, Schmidt &amp; Glaser, 2021 · Frontiers in Virtual Reality</cite></li>
+        <li><b>Wearing a headset at all.</b> In a pilot with 29 autistic adults, all were willing to wear the headset and most found it enjoyable, with a strong sense of presence.<cite>Newbutt et al., 2016 · Journal of Autism and Developmental Disorders</cite></li>
+      </ul>
+    </details>
+    <div class="sh-foot">
+      Everything starts at 0: a still camera on a quiet street. Change conditions and see what breaks it. Conditions that help take a share off the index; they cannot push it below 0. The index is a teaching estimate built from published findings, not a medical measure.
+      <p style="margin:10px 0 0">3D models: Kenney (CC0). The jeep you drive: “Car” by jeremy, CC-BY 3.0, via Poly Pizza.</p>
+    </div>
+  </aside>
+</div>
+
+
+<script>
+  // if the 3D module never starts (a browser without import maps, or a blocked CDN), say so instead of sitting at 0%
+  setTimeout(function () {
+    if (window.__qsBooted) return;
+    var t = document.getElementById('ld-txt');
+    if (t) t.textContent = 'The street could not start. This page needs a recent browser (Chrome, Edge, Firefox, or Safari 16.4 or later) and a connection to cdn.jsdelivr.net.';
+  }, 12000);
+</script>
+<script type="module">
+window.__qsBooted = true;
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+/* ───────────── conditions ───────────── */
+/* ───────────── the evidence ─────────────
+   Every condition names its sources. Strength is how much the research agrees:
+   strong (reviews, many studies), moderate (one or two solid experiments),
+   limited (a poster, a talk, mixed results), untested (practice, no study found). */
+const REFS = {
+  reason1975: ['Reason, J.T. & Brand, J.J. (1975). Motion Sickness. Academic Press.', ''],
+  so2001: ['So, R.H.Y., Lo, W.T. & Ho, A.T.K. (2001). Effects of navigation speed on motion sickness caused by an immersive virtual environment. Human Factors, 43(3), 452–461.', 'https://doi.org/10.1518/001872001775898223'],
+  farmani2020: ['Farmani, Y. & Teather, R.J. (2020). Evaluating discrete viewpoint control to reduce cybersickness in virtual reality. Virtual Reality.', 'https://doi.org/10.1007/s10055-020-00425-x'],
+  bonato2008: ['Bonato, F., Bubka, A., Palmisano, S., Phillip, D. & Moreno, G. (2008). Vection change exacerbates simulator sickness in virtual environments. Presence, 17(3), 283–292.', 'https://doi.org/10.1162/pres.17.3.283'],
+  widdowson2021: ['Widdowson, C., Becerra, I., Merrill, C., Wang, R.F. & LaValle, S. (2021). Assessing postural instability and cybersickness through linear and angular displacement. Human Factors, 63(2), 296–311.', 'https://doi.org/10.1177/0018720819881254'],
+  hettinger1990: ['Hettinger, L.J., Berbaum, K.S., Kennedy, R.S., Dunlap, W.P. & Nolan, M.D. (1990). Vection and simulator sickness. Military Psychology, 2(3), 171–181.', 'https://doi.org/10.1207/s15327876mp0203_4'],
+  keshavarz2015: ['Keshavarz, B., Riecke, B.E., Hettinger, L.J. & Campos, J.L. (2015). Vection and visually induced motion sickness: how are they related? Frontiers in Psychology, 6, 472.', 'https://doi.org/10.3389/fpsyg.2015.00472'],
+  keshavarz2014a: ['Keshavarz, B., Hettinger, L.J., Vena, D. & Campos, J.L. (2014). Combined effects of auditory and visual cues on the perception of vection. Experimental Brain Research, 232(3), 827–836.', 'https://doi.org/10.1007/s00221-013-3793-9'],
+  keshavarz2014b: ['Keshavarz, B. & Hecht, H. (2014). Pleasant music as a countermeasure against visually induced motion sickness. Applied Ergonomics, 45(3), 521–527.', 'https://doi.org/10.1016/j.apergo.2013.07.009'],
+  rothe2018: ['Rothe, S., Kegeles, B., Allary, M. & Hußmann, H. (2018). The impact of camera height in cinematic virtual reality. ACM VRST 2018 (poster).', 'https://doi.org/10.1145/3281505.3283383'],
+  fernandes2016: ['Fernandes, A.S. & Feiner, S.K. (2016). Combating VR sickness through subtle dynamic field-of-view modification. IEEE 3DUI 2016, 201–210.', 'https://doi.org/10.1109/3DUI.2016.7460053'],
+  wang2023: ['Wang, J., Shi, R., Zheng, W., Xie, W., Kao, D. & Liang, H.-N. (2023). Effect of frame rate on user experience, performance, and simulator sickness in virtual reality. IEEE TVCG, 29(5), 2478–2488.', 'https://doi.org/10.1109/TVCG.2023.3247057'],
+  stauffert2020: ['Stauffert, J.-P., Niebling, F. & Latoschik, M.E. (2020). Latency and cybersickness: impact, causes, and measures. A review. Frontiers in Virtual Reality, 1, 582204.', 'https://doi.org/10.3389/frvir.2020.582204'],
+  prothero1998: ['Prothero, J.D. (1998). The role of rest frames in vection, presence and motion sickness. PhD dissertation, University of Washington.', ''],
+  cao2018: ['Cao, Z., Jerald, J. & Kopper, R. (2018). Visually-induced motion sickness reduction via static and dynamic rest frames. IEEE VR 2018, 105–112.', 'https://doi.org/10.1109/VR.2018.8446210'],
+  whittinghill2015: ['Whittinghill, D.M., Ziegler, B., Moore, J. & Case, T. (2015). Nasum virtualis: a simple technique for reducing simulator sickness. Game Developers Conference talk; Purdue University news release, 24 March 2015.', 'https://www.purdue.edu/newsroom/releases/2015/Q1/virtual-nose-may-reduce-simulator-sickness-in-video-games.html'],
+  ohanlon1974: ['O’Hanlon, J.F. & McCauley, M.E. (1974). Motion sickness incidence as a function of the frequency and acceleration of vertical sinusoidal motion. Aerospace Medicine, 45(4), 366–369.', ''],
+  golding2001: ['Golding, J.F., Mueller, A.G. & Gresty, M.A. (2001). A motion sickness maximum around the 0.2 Hz frequency range of horizontal translational oscillation. Aviation, Space, and Environmental Medicine, 72(3), 188–192.', ''],
+  palmisano2011: ['Palmisano, S., Allison, R.S., Kim, J. & Bonato, F. (2011). Simulated viewpoint jitter shakes sensory conflict accounts of vection. Seeing and Perceiving, 24(2), 173–200.', 'https://doi.org/10.1163/187847511X570817'],
+  stanney1998: ['Stanney, K.M. & Hash, P. (1998). Locus of user-initiated control in virtual environments: influences on cybersickness. Presence, 7(5), 447–459.', 'https://doi.org/10.1162/105474698565848'],
+  kennedy2000: ['Kennedy, R.S., Stanney, K.M. & Dunlap, W.P. (2000). Duration and exposure to virtual environments: sickness curves during and across sessions. Presence, 9(5), 463–472.', 'https://doi.org/10.1162/105474600566952'],
+  stanney2003: ['Stanney, K.M., Hale, K.S., Nahmens, I. & Kennedy, R.S. (2003). What to expect from immersive virtual environment exposure. Human Factors, 45(3), 504–520.', 'https://doi.org/10.1518/hfes.45.3.504.27254'],
+  bos2005: ['Bos, J.E., MacKinnon, S.N. & Patterson, A. (2005). Motion sickness symptoms in a ship motion simulator: effects of inside, outside, and no view. Aviation, Space, and Environmental Medicine, 76(12), 1111–1118.', ''],
+  golding2006: ['Golding, J.F. (2006). Predicting individual differences in motion sickness susceptibility by questionnaire. Personality and Individual Differences, 41(2), 237–248.', 'https://doi.org/10.1016/j.paid.2006.01.012'],
+  golding2021: ['Golding, J.F., Rafiq, A. & Keshavarz, B. (2021). Predicting individual susceptibility to visually induced motion sickness by questionnaire. Frontiers in Virtual Reality, 2, 576871.', 'https://doi.org/10.3389/frvir.2021.576871'],
+  duzmanska2018: ['Dużmańska, N., Strojny, P. & Strojny, A. (2018). Can simulator sickness be avoided? A review on temporal aspects of simulator sickness. Frontiers in Psychology, 9, 2132.', 'https://doi.org/10.3389/fpsyg.2018.02132'],
+  carson2022: ['Carson, T.B. et al. (2022). Prevalence and severity of auditory sensory over-responsivity in autism as reported by parents and caregivers. Journal of Autism and Developmental Disorders.', 'https://doi.org/10.1007/s10803-021-04991-0'],
+  gepner2002: ['Gepner, B. & Mestre, D.R. (2002). Brief report: postural reactivity to fast visual motion differentiates autistic from children with Asperger syndrome. Journal of Autism and Developmental Disorders, 32(3), 231–238.', ''],
+  schmidt2021: ['Schmidt, M., Newbutt, N., Schmidt, C. & Glaser, N. (2021). A process-model for minimizing adverse effects when using head mounted display-based virtual reality for individuals with autism. Frontiers in Virtual Reality, 2, 611740.', 'https://doi.org/10.3389/frvir.2021.611740'],
+  newbutt2016: ['Newbutt, N., Sung, C., Kuo, H.-J., Leahy, M.J., Lin, C.-C. & Tong, B. (2016). Brief report: a pilot study of the use of a virtual reality headset in autism populations. Journal of Autism and Developmental Disorders, 46, 3166–3176.', '']
+};
+// "Farmani, Y. & Teather, R.J. (2020)…" → "Farmani & Teather, 2020"; three or more authors → "et al."
+function shortRef(full) {
+  const head = full.split(' (')[0], year = (full.match(/\((\d{4})\)/) || [])[1] || '';
+  const names = [...head.matchAll(/([A-Z][A-Za-zÀ-ž’'\-]+), [A-Z]\./g)].map(m => m[1]);
+  const who = names.length === 0 ? head : names.length === 1 ? names[0] : names.length === 2 ? `${names[0]} & ${names[1]}` : `${names[0]} et al.`;
+  return `${who}, ${year}`;
+}
+const EV = {strong:'Strong evidence', moderate:'Moderate evidence', limited:'Limited evidence', untested:'Not yet studied'};
+
+const HEIGHT_WHY = ['A camera set higher than your real eyes felt strange to about twice as many viewers as one set lower; 10 cm off was mostly accepted. That study measured presence and discomfort, not sickness, so this is a small effect here.', 'rothe2018'];
+const C = [
+  {id:'camera', code:'C1', name:'Camera motion', ev:'moderate', o:[['still','Stationary',0],['walk','Walking',6],['drive','Driving, straight',12],['yaw','Smooth turning',40],['snap','Snap turning',24]],
+   why:{still:['A camera that stays put removes the main conflict: your eyes report no self-motion and your inner ear feels none.','reason1975'],
+        walk:['You see yourself move while your body stands still. At walking pace the conflict is mild: in the study below, sickness came sooner as speed rose from 3 to 10 m/s.','so2001'],
+        drive:['A straight road at 40 km/h. Nausea and the sense of motion rose with speed from 3 to 10 m/s and then levelled off, so driving reads stronger than walking. No curves means no rotation.','so2001'],
+        yaw:['Smooth rotation you did not make is among the hardest motion to tolerate.','farmani2020'],
+        snap:['The same turning, in 22.5° jumps instead of a smooth sweep. In the study below, snapping rotation cut sickness scores by about 40%.','farmani2020']}},
+  {id:'control', code:'C2', name:'Who moves you', ev:'moderate', o:[['auto','Automatic',0],['you','You (hold ↑, W or trigger)',0,.2]],
+   why:{auto:['The camera moves on its own, like a ride.','stanney1998'],
+        you:['You move only while you hold ↑, W or the on-screen button. People who controlled their own movement got less sick than people taken on a scripted ride.','stanney1998']}},
+  {id:'accel', code:'C3', name:'Speed changes', ev:'limited', o:[['none','Constant',0],['some','Speed up and brake',6]],
+   why:{none:['A steady pace. Flow that keeps changing tends to be worse than flow that stays steady.','bonato2008'],
+        some:['Speeding up and slowing down. One study found changing motion worse than steady motion; another found no difference. Treat this as likely, not proven.','widdowson2021']}},
+  {id:'around', code:'C4', name:'Movement around you', ev:'moderate', multi:true, o:[['none','Empty street',0],['peds','People walking',1],['pass','Car passing',1],['rev','Car reversing',14]],
+   why:{none:['Nothing large moves in your view, so the scene reads as stable.','keshavarz2015'],
+        peds:['People walking by are small and clearly moving on their own. The brain rarely mistakes them for its own motion.','keshavarz2015'],
+        pass:['A car passing at speed is brief and obviously moving. The brain reads it as the car, not you.','keshavarz2015'],
+        rev:['While you stand still, a large object creeping past at walking pace can make you feel you are the one moving: vection, like the train next to yours pulling away. In an early study, 8 of the 9 people who got sick had felt vection first.','hettinger1990']}},
+  {id:'sound', code:'C5', name:'Sound', ev:'limited', o:[['match','In sync',0],['music','Pleasant music',0,.1],['none','Silent',0],['off','Wrong scene',3],['flip','Mirrored L/R',4]],
+   why:{match:['Sound that moves with the picture makes the sense of motion start sooner and feel stronger, but in the study below it did not change sickness.','keshavarz2014a'],
+        music:['Music you find pleasant. In a study of 93 people, sickness dropped only when listeners rated the music pleasant, whatever the style.','keshavarz2014b'],
+        none:['No sound at all. No study shows that silence helps or hurts.','keshavarz2014a'],
+        off:['A beach while you look at a street. Mismatched sound is a common worry among VR makers, but we found no study that measures its effect on sickness.','keshavarz2014a'],
+        flip:['The car is on your right and you hear it on your left. A common production fault; we found no study that measures its effect on sickness, so the weight here is small.','keshavarz2014a']}},
+  {id:'loud', code:'C6', name:'Sudden loud noise', ev:'untested', o:[['no','Off',0],['yes','Every few seconds',5]],
+   why:{no:['No startles.',''],
+        yes:['Turn your volume down first. VR makers report that sudden loud sounds make people feel worse, but we found no study that tests it. The weight is a placeholder.','']}},
+  {id:'posture', code:'C7', name:'You are', ev:'limited', o:[['seated','Seated',0],['standing','Standing',0]],
+   why:{seated:['Seated, your eyes are about 1.2 m from the floor, so a 1.2 m camera matches.','rothe2018'],
+        standing:['Standing, your eyes are about 1.6 m from the floor, so a 1.6 m camera matches.','rothe2018']}},
+  {id:'cam', code:'C8', name:'Camera height', ev:'limited', o:[['1.2','1.2 m',0],['1.6','1.6 m',0],['2.0','2.0 m',0]],
+   why:{'1.2':HEIGHT_WHY, '1.6':HEIGHT_WHY, '2.0':HEIGHT_WHY}},
+  {id:'fov', code:'C9', name:'Field of view', ev:'moderate', o:[['full','Full',0],['vig','Comfort vignette',0,.2]],
+   why:{full:['Peripheral vision is very sensitive to motion, and it is all open.','fernandes2016'],
+        vig:['The edges darken while you move and open again when you stop. Sickness was significantly lower, people stayed in longer, and most did not notice the restriction.','fernandes2016']}},
+  {id:'fps', code:'C10', name:'Frame rate', ev:'moderate', o:[['native','Native',0],['30','30 fps',8],['15','15 fps',17]],
+   why:{native:['The world updates as fast as your screen allows. In headsets, sickness dropped noticeably at 120 fps and above compared with 60 or 90.','wang2023'],
+        '30':['The world updates in steps. The study tested 60 to 180 fps; 30 fps is lower than anything it tried, so the effect here is extrapolated.','wang2023'],
+        '15':['Big steps between frames, far below the rates studied. The direction is clear; the size is a guess.','wang2023']}},
+  {id:'lag', code:'C11', name:'Head-tracking delay', ev:'strong', o:[['0','None',0],['60','60 ms',7],['150','150 ms',15]],
+   why:{'0':['The view follows your head the moment it moves. The usual target is under 20 ms.','stauffert2020'],
+        '60':['The view trails your head by 60 ms. Drag the street to feel it. Delay between moving your head and the image updating causes sickness, and irregular delay makes it worse.','stauffert2020'],
+        '150':['At 150 ms the world visibly slides after each head movement.','stauffert2020']}},
+  {id:'rest', code:'C12', name:'Fixed reference', ev:'moderate', o:[['no','None',0],['yes','Horizon and frame',0,.2]],
+   why:{no:['Everything you see moves with the scene.','prothero1998'],
+        yes:['A horizon and frame that never move give the brain something it can treat as still. With a fixed frame in view, people travelled further before stopping from discomfort.','cao2018']}},
+  {id:'nose', code:'C13', name:'Virtual nose', ev:'limited', o:[['no','Off',0],['yes','On',0,.1]],
+   why:{no:['No body part in view.','whittinghill2015'],
+        yes:['A faint nose at the bottom of the view, like your own. In a 41-person test, people lasted 94 s longer in a gentle walk-through, but only 2 s longer on a roller coaster. Presented at a conference, not yet peer-reviewed.','whittinghill2015']}},
+  {id:'sway', code:'C14', name:'Slow sway', ev:'strong', o:[['no','Off',0],['yes','Rolling at 0.2 Hz',16]],
+   why:{no:['The horizon stays level.','ohanlon1974'],
+        yes:['A gentle roll and heave, once every five seconds, like a boat. Around 0.2 Hz is the most nauseating frequency: at 0.2 Hz all 12 susceptible volunteers reached moderate nausea, against 8 at 0.1 Hz and 7 at 0.4 Hz. Those studies used real motion, not VR.','golding2001']}},
+  {id:'bob', code:'C15', name:'Head bob when walking', ev:'limited', o:[['no','Off',0],['yes','On',2]],
+   why:{no:['When walking, the camera glides at a steady height.','palmisano2011'],
+        yes:['The camera bounces with each step. Bob makes motion feel more real; whether it adds sickness in a headset is unproven, so the weight is small. Counts only while walking.','palmisano2011']}},
+  {id:'cabin', code:'C16', name:'Car interior when driving', ev:'moderate', o:[['no','Off',0],['yes','On',0,.2]],
+   why:{no:['You float down the road with nothing around you.','cao2018'],
+        yes:['A dashboard, pillars and roof that move with you: a rest frame, something stable in view while the world flows past. Counts only while driving.','cao2018']}}
+];
+const S = {camera:'still', control:'auto', accel:'none', around:[], sound:'match', loud:'no', posture:'seated', cam:'1.2', fov:'full', fps:'native', lag:'0', rest:'no', nose:'no', sway:'no', bob:'yes', cabin:'yes'};
+const has = v => S.around.includes(v);
+let active = 'camera', aroundWhy = 'none';
+const events = [];   // {t, code}
+
+/* build the sheet */
+const form = document.getElementById('conds');
+for (const c of C) {
+  const fs = document.createElement('fieldset');
+  fs.className = 'cond'; fs.id = 'f-' + c.id;
+  const type = c.multi ? 'checkbox' : 'radio';
+  const on = v => c.multi ? (v === 'none' ? S[c.id].length === 0 : S[c.id].includes(v)) : S[c.id] === v;
+  fs.innerHTML = `<legend><span class="code">${c.code}</span><span class="name">${c.name}${c.multi ? ' <small>· combine</small>' : ''}</span></legend>
+    <div class="opts${c.multi ? ' multi' : ''}">${c.o.map(([v,l]) => `<input type="${type}" name="${c.id}" id="${c.id}-${v}" value="${v}"${on(v)?' checked':''}><label for="${c.id}-${v}">${l}</label>`).join('')}</div>
+    <div class="drv" id="d-${c.id}"></div>
+    <p class="why" id="w-${c.id}" hidden></p>`;
+  form.appendChild(fs);
+}
+form.addEventListener('change', e => {
+  const c = C.find(c => c.id === e.target.name); if (!c) return;
+  if (c.multi) {
+    const v = e.target.value;
+    if (v === 'none') S[c.id] = [];                                   // Empty street clears the rest
+    else S[c.id] = e.target.checked ? [...new Set([...S[c.id], v])] : S[c.id].filter(x => x !== v);
+    for (const [ov] of c.o) document.getElementById(`${c.id}-${ov}`).checked = ov === 'none' ? S[c.id].length === 0 : S[c.id].includes(ov);
+    aroundWhy = v === 'none' || !e.target.checked ? (S[c.id].at(-1) || 'none') : v;
+  } else S[c.id] = e.target.value;
+  active = c.id;
+  events.push({t: clock, code: c.code});
+  sheetUpdate(); applyAudio();
+});
+
+// one-click setups: back to the baseline, everything the evidence says helps, everything it says hurts
+const BASE = JSON.parse(JSON.stringify(S));
+const PRESETS = {
+  zero: {...BASE},
+  comfort: {...BASE, camera:'walk', control:'you', around:['peds'], sound:'music', fov:'vig', rest:'yes', nose:'yes', bob:'no', lag:'0', fps:'native', cabin:'yes'},
+  worst: {...BASE, camera:'yaw', control:'auto', accel:'some', around:['rev','pass','peds'], sound:'flip', loud:'yes', posture:'seated', cam:'2.0', fov:'full', fps:'15', lag:'150', rest:'no', nose:'no', sway:'yes', bob:'yes'}
+};
+function applyPreset(name) {
+  Object.assign(S, JSON.parse(JSON.stringify(PRESETS[name])));
+  for (const c of C) for (const [v] of c.o) {
+    const el = document.getElementById(`${c.id}-${v}`);
+    el.checked = c.multi ? (v === 'none' ? S[c.id].length === 0 : S[c.id].includes(v)) : S[c.id] === v;
+  }
+  active = 'camera'; aroundWhy = S.around.at(-1) || 'none';
+  events.push({t: clock, code: {zero:'0', comfort:'OK', worst:'MAX'}[name]});
+  sheetUpdate(); applyAudio();
+}
+/* your own rating, on the Misery Scale used in motion-sickness research (MISC, Bos et al., 2005) */
+const MISC = ['No problems', 'Uneasy, no typical symptoms', 'Vague dizziness, warmth, headache, stomach awareness or sweating', 'Slight dizziness, warmth, headache, stomach awareness or sweating', 'Fairly strong dizziness, warmth, headache, stomach awareness or sweating', 'Severe dizziness, warmth, headache, stomach awareness or sweating', 'Slight nausea', 'Fairly strong nausea', 'Severe nausea', 'Near retching', 'Vomiting'];
+let misc = -1;
+{
+  const row = document.getElementById('misc-row');
+  MISC.forEach((label, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = i; b.title = label;
+    b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', `${i}: ${label}`);
+    b.addEventListener('click', () => {
+      misc = i; events.push({t: clock, code: 'M' + i});
+      row.querySelectorAll('button').forEach((x, j) => x.setAttribute('aria-pressed', String(j === i)));
+      document.getElementById('misc-say').textContent = `${i} · ${label}.` + (i >= 6 ? ' Stop here: take the headset off or look away, and rest.' : '');
+    });
+    row.appendChild(b);
+  });
+}
+const EYE = {seated:1.2, standing:1.6};
+/* time: sickness grows with time in a headset, roughly in a straight line (Kennedy, Stanney & Dunlap, 2000).
+   The rate here (+3% a minute, up to +60%) is ours, for illustration. */
+function exposureFactor() { return started ? 1 + Math.min(.6, (clock - startedAt) / 60 * .03) : 1; }
+/* you: MSSQ-short (Golding, 2006). 9 kinds of travel, as a child and in the last 10 years; 0 never sick … 3 frequently.
+   Raw score 0–54; percentile from Golding's published polynomial. It predicts sickness in VR too (r = 0.46, Golding et al., 2021).
+   We turn the percentile into a factor from ×0.6 to ×1.4, with the median person at ×1.0: our scaling, for illustration. */
+const MSSQ_ITEMS = ['Cars', 'Buses or coaches', 'Trains', 'Aircraft', 'Small boats', 'Ships (e.g. ferries)', 'Playground swings', 'Playground roundabouts', 'Big dippers, funfair rides'];
+const mssq = {a: Array(9).fill(null), b: Array(9).fill(null)};
+function mssqScore() {
+  // Golding's scoring: part total × 9 / (9 − items never travelled); every item must be answered
+  const part = arr => { if (arr.some(v => v === null)) return null; const na = arr.filter(v => v === 'na').length;
+    if (na === 9) return null; return arr.reduce((x, v) => x + (v === 'na' ? 0 : v), 0) * 9 / (9 - na); };
+  const A = part(mssq.a), B = part(mssq.b);
+  if (A === null || B === null) return null;
+  return A + B;
+}
+function mssqPercentile(x) { const p = 5.1160923*x - 0.055169904*x*x - 0.00067784495*x**3 + 1.0714752e-5*x**4; return Math.max(0, Math.min(100, p)); }
+function profileFactor() { const r = mssqScore(); return r === null ? 1 : .6 + mssqPercentile(r) / 100 * .8; }
+function contributions() {
+  const k = {};
+  for (const c of C) k[c.id] = c.multi ? 0 : c.o.find(o => o[0] === S[c.id])[2];
+  const still = S.camera === 'still' || S.camera === 'yaw' || S.camera === 'snap';
+  const aw = Object.fromEntries(C.find(c => c.id === 'around').o.map(o => [o[0], o[2]]));
+  for (const v of S.around) k.around += v === 'rev' && still ? Math.round(aw[v] * 1.5) : aw[v];   // the train illusion is strongest when you are still
+  const dh = parseFloat(S.cam) - EYE[S.posture];                    // too high reads stranger than too low (Rothe et al., 2018)
+  k.cam = S.camera === 'drive' && S.cabin === 'yes' ? 0 : Math.round(dh > 0 ? dh * 15 : -dh * 7);
+  if (!still && k.sound > 0) k.sound = Math.round(k.sound * 1.3);    // wrong sound hurts more once the picture moves
+  if (S.accel === 'some' && still) k.accel = 0;                      // nothing to accelerate
+  if (S.camera !== 'walk') k.bob = 0;                                // no steps, no bob
+  if (typeof renderer !== 'undefined' && renderer.xr.isPresenting) { k.fps = 0; k.lag = 0; }   // in a headset the real tracking and refresh rate are used
+  return k;
+}
+let target = 0, baseTarget = 0;   // baseTarget before time; time is applied every frame
+// conditions that help do not bank credit; they take a share off whatever risk there is
+function mitigations() {
+  const m = {};
+  for (const c of C) if (!c.multi) { const o = c.o.find(o => o[0] === S[c.id]); if (o[3]) m[c.id] = o[3]; }
+  if (S.camera !== 'drive') delete m.cabin;                          // the cabin only exists while driving
+  if (S.camera === 'still') delete m.control;                        // nothing to control when nothing moves
+  return m;
+}
+function sheetUpdate() {
+  const k = contributions(), mit = mitigations();
+  const raw = Object.values(k).reduce((a,b) => a + b, 0);
+  baseTarget = Math.max(0, raw * Object.values(mit).reduce((a, f) => a * (1 - f), 1) * profileFactor());
+  target = Math.round(Math.min(100, baseTarget * exposureFactor()));
+  const pf = profileFactor(); $('o-profile').textContent = pf === 1 ? 'not set' : `×${pf.toFixed(2)}`;
+  for (const c of C) {
+    const fs = document.getElementById('f-' + c.id);
+    fs.classList.toggle('active', c.id === active);
+    const w = document.getElementById('w-' + c.id);
+    if (c.id === active) {
+      const [t, key] = c.why[c.multi ? aroundWhy : S[c.id]], ref = REFS[key];
+      const short = ref ? shortRef(ref[0]) : '';
+      w.innerHTML = t + (ref ? `<cite>${ref[1] ? `<a href="${ref[1]}" target="_blank" rel="noopener">${short}</a>` : short} · <a href="#refs" class="to-refs">all sources</a></cite>` : '<cite>No study found · <a href="#refs" class="to-refs">all sources</a></cite>');
+      w.hidden = false;
+    }
+    else w.hidden = true;
+    const v = k[c.id], d = document.getElementById('d-' + c.id);
+    d.innerHTML = mit[c.id] ? `<b class="dn">−${Math.round(mit[c.id] * 100)}%</b> of the index`
+      : v === 0 ? '' : `<b class="up">+${v}</b> on the index`;
+  }
+}
+
+
+/* ───────────── renderer & scene ───────────── */
+const canvas = document.getElementById('gl');
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+let pixelRatio = Math.min(devicePixelRatio, 1.5);
+renderer.setPixelRatio(pixelRatio);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.xr.enabled = true;
+
+const scene = new THREE.Scene();
+const SKY = new THREE.Color('#cfdde6');
+scene.fog = new THREE.Fog(SKY, 50, 170);
+// soft image-based light, computed in the browser: no download
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+
+// sky dome with a vertical gradient
+{
+  const m = new THREE.ShaderMaterial({side:THREE.BackSide, depthWrite:false, fog:false,
+    uniforms:{top:{value:new THREE.Color('#5f8fb8')}, mid:{value:SKY}, bot:{value:new THREE.Color('#e9e3d6')}},
+    vertexShader:'varying vec3 p; void main(){ p = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+    fragmentShader:'uniform vec3 top,mid,bot; varying vec3 p; void main(){ float h=p.y; vec3 c = h>0. ? mix(mid,top,pow(h,.55)) : mix(mid,bot,min(1.,-h*4.)); gl_FragColor=vec4(c,1.); }'});
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(500, 32, 16), m); dome.renderOrder = -1;
+  scene.add(dome); scene.userData.dome = dome;
+}
+scene.add(new THREE.HemisphereLight('#e4eef5', '#9c8a74', 1.1));
+const sun = new THREE.DirectionalLight('#fff0dc', 2.4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, {left:-40, right:40, top:40, bottom:-40, near:1, far:200});
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = .02;
+scene.add(sun, sun.target);
+const sunDir = new THREE.Vector3(.45, .8, .55).normalize();
+
+const ASSETS = './assets/';
+const manager = new THREE.LoadingManager();
+const gltf = new GLTFLoader(manager);
+const load = url => new Promise((res, rej) => gltf.load(ASSETS + url, res, undefined, rej));
+
+/* the street, in metres */
+const L = 200;               // the street repeats every L metres; everything wraps around you
+const RW = 4.2;              // half the carriageway
+const WALK = 4.2;            // pavement width
+const FRONT = RW + WALK;     // building line
+const BACK = 60;             // kept this far behind you before wrapping to the front (past the fog start)
+
+const periodic = [];
+function wrapZ(z, camZ) { let r = (z - camZ + BACK) % L; if (r < 0) r += L; return camZ + r - BACK; }
+let lastWrapZ = Infinity;
+function updatePeriodic(camZ, force) {
+  if (!force && Math.abs(camZ - lastWrapZ) < 2) return;     // wrap edges sit behind you and deep in the fog: 2 m steps are invisible
+  lastWrapZ = camZ;
+  for (const p of periodic) {
+    if (p.mesh) {
+      const a = p.mesh.instanceMatrix.array;
+      for (let i = 0; i < p.baseZ.length; i++) a[i*16 + 14] = wrapZ(p.baseZ[i], camZ);
+      p.mesh.instanceMatrix.needsUpdate = true;
+    } else p.obj.position.z = wrapZ(p.baseZ, camZ);
+  }
+}
+/* one InstancedMesh per mesh in a model, placed at every matrix */
+function instanceModel(root, mats, {cast = true, receive = true} = {}) {
+  const made = [];
+  if (!mats.length) return made;
+  root.updateMatrixWorld(true);
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const im = new THREE.InstancedMesh(o.geometry.clone().applyMatrix4(o.matrixWorld), o.material, mats.length);
+    const baseZ = new Float32Array(mats.length);
+    mats.forEach((m, i) => { im.setMatrixAt(i, m); baseZ[i] = m.elements[14]; });
+    im.castShadow = cast; im.receiveShadow = receive; im.frustumCulled = false;
+    scene.add(im); periodic.push({mesh:im, baseZ}); made.push(im);
+  });
+  return made;
+}
+const M = (x, y, z, ry = 0, s = 1) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), new THREE.Vector3(s, s, s));
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;   // the same street every time
+const pick = a => a[(rnd() * a.length) | 0];
+const sizeOf = o => { const b = new THREE.Box3().setFromObject(o); return b.getSize(new THREE.Vector3()); };
+
+/* ───────────── ground ───────────── */
+function groundTex(base, dots, lines) {      // small canvas texture: a little grain and joints
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+  x.fillStyle = base; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < dots; i++) { x.fillStyle = `rgba(0,0,0,${Math.random()*.06})`; x.fillRect(Math.random()*256, Math.random()*256, 2, 2); }
+  if (lines) { x.strokeStyle = 'rgba(60,50,40,.28)'; for (let i = 0; i <= 256; i += 64) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 256); x.moveTo(0, i); x.lineTo(256, i); x.stroke(); } }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+}
+const GLEN = 480, GZ0 = 70;                  // ground from +70 to −410: covers every wrap position
+{
+  const at = groundTex('#5d5f63', 6000, false); at.repeat.set(2, GLEN/4);
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(RW*2, GLEN), new THREE.MeshStandardMaterial({map:at, roughness:.92}));
+  road.rotation.x = -Math.PI/2; road.position.set(0, 0, GZ0 - GLEN/2); road.receiveShadow = true; scene.add(road);
+  const wt = groundTex('#c9c1b2', 3000, true); wt.repeat.set(WALK/1, GLEN/1);
+  for (const sx of [-1, 1]) {
+    const w = new THREE.Mesh(new THREE.BoxGeometry(WALK, .15, GLEN), new THREE.MeshStandardMaterial({map:wt, roughness:.9}));
+    w.position.set(sx*(RW + WALK/2), .075, GZ0 - GLEN/2); w.receiveShadow = true; scene.add(w);
+    const k = new THREE.Mesh(new THREE.BoxGeometry(.24, .17, GLEN), new THREE.MeshStandardMaterial({color:'#b5b0a6', roughness:.85}));
+    k.position.set(sx*(RW + .1), .085, GZ0 - GLEN/2); k.receiveShadow = k.castShadow = true; scene.add(k);
+  }
+  const paint = new THREE.MeshStandardMaterial({color:'#eeebe2', roughness:.7, polygonOffset:true, polygonOffsetFactor:-2});
+  const dash = [], edge = [], zebra = [];
+  for (let z = 0; z > -L; z -= 8) dash.push(M(0, .006, z - 1.5));
+  for (const sx of [-1, 1]) for (let z = 0; z > -L; z -= 10) edge.push(M(sx*(RW - .4), .006, z - 5));
+  for (let i = -3; i <= 3; i++) zebra.push(M(i*1.15, .007, -118));
+  const mk = (w, d, list) => { const g = new THREE.PlaneGeometry(w, d); g.rotateX(-Math.PI/2); instanceModel(new THREE.Mesh(g, paint), list, {cast:false}); };
+  mk(.15, 3, dash); mk(.13, 10, edge); mk(.6, 3.6, zebra);
+}
+
+/* ───────────── buildings, trees, parked cars ───────────── */
+const parkedMeshes = [], parkedSpots = [];   // spots also feed the radar       // hidden while you drive, so the lane is clear
+async function buildCity() {
+  const names = 'abcdfghiklmn'.split('').map(c => 'building-' + c);
+  const [blds, trees, parkedCars, awning] = await Promise.all([
+    Promise.all(names.map(n => load(`city/${n}.glb`))),
+    Promise.all(['tree_oak', 'tree_detailed', 'tree_default'].map(n => load(`nature/${n}.glb`))),
+    Promise.all(['suv', 'van', 'hatchback-sports', 'delivery', 'taxi'].map(n => load(`cars/${n}.glb`))),
+    load('city/detail-awning-wide.glb')]);
+  // buildings: a terrace on each side, each scaled so its front is ~9–13 m and storeys read at street scale
+  const place = blds.map(() => []);
+  const awnings = [];
+  for (const sx of [-1, 1]) {
+    // pick buildings until the side is full, then share out the leftover as even gaps,
+    // so the row closes exactly on itself where the street repeats (where you start)
+    const row = []; let used = 0;
+    while (true) {
+      const i = (rnd() * blds.length) | 0, s = sizeOf(blds[i].scene), k = 3.4 + rnd() * .8;
+      const b = {i, k, w: s.x * k, d: s.z * k};
+      if (used + b.w + .3 * (row.length + 1) > L) break;
+      row.push(b); used += b.w;
+    }
+    const gap = (L - used) / row.length;
+    const ry = sx < 0 ? Math.PI/2 : -Math.PI/2;    // the kit faces +z; turn it to face the street
+    let z = -gap / 2;
+    for (const b of row) {
+      place[b.i].push(M(sx * (FRONT + b.d/2), 0, z - b.w/2, ry, b.k));
+      if (rnd() < .5) awnings.push(M(sx * (FRONT - .05), 2.9, z - b.w/2, ry, 2.4));
+      z -= b.w + gap;
+    }
+  }
+  blds.forEach((b, i) => instanceModel(b.scene, place[i]));
+  instanceModel(awning.scene, awnings);
+  // trees on the far pavement and a few on yours
+  const tp = trees.map(() => []);
+  for (let z = -8; z > -L; z -= 15) tp[(rnd()*3) | 0].push(M(RW + 1.1, .15, z, rnd()*6.28, 3.6 + rnd()*.8));
+  for (let z = -34; z > -L; z -= 41) tp[(rnd()*3) | 0].push(M(-(RW + .9), .15, z, rnd()*6.28, 3.4 + rnd()*.6));
+  trees.forEach((t, i) => instanceModel(t.scene, tp[i]));
+  // parked cars along the far kerb
+  const k = carScale(parkedCars[0].scene);
+  const pc = parkedCars.map(() => []);
+  for (let z = -16; z > -L; z -= 13 + rnd()*14) { pc[(rnd()*pc.length) | 0].push(M(RW - 1.15, 0, z, rnd() < .8 ? Math.PI : 0, k)); parkedSpots.push({x: RW - 1.15, z}); }   // mostly facing the traffic direction (−z)
+  parkedCars.forEach((c, i) => parkedMeshes.push(...instanceModel(c.scene, pc[i])));
+}
+function carScale(model) { return 4.4 / sizeOf(model).z; }   // scale every car to a 4.4 m length
+
+/* ───────────── the moving car ───────────── */
+const movingCar = new THREE.Group(); scene.add(movingCar); movingCar.visible = false;
+let carModel = null; const carWheels = [];
+async function buildCar() {
+  const g = await load('cars/sedan.glb');
+  const m = g.scene, k = carScale(m);
+  m.scale.setScalar(k);
+  m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (/^wheel/.test(o.name)) carWheels.push(o); });
+  m.rotation.y = Math.PI;                    // the kit's nose points +z (front wheels at +z); ours face −z
+  carModel = m; movingCar.add(m);
+  // a reverse light you can see from the pavement
+  movingCar.userData.revLight = new THREE.PointLight('#ffffff', 0, 6); movingCar.userData.revLight.position.set(0, .7, 2.4); movingCar.add(movingCar.userData.revLight);
+  // the passing car is a different model, so both can be on at once
+  const t = (await load('cars/taxi.glb')).scene;
+  t.scale.setScalar(carScale(t)); t.rotation.y = Math.PI;   // nose to −z, like the sedan
+  t.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (/^wheel/.test(o.name)) passWheels.push(o); });
+  passModel = t; passCar.add(t);
+}
+const passCar = new THREE.Group(); scene.add(passCar); passCar.visible = false;
+let passModel = null, passZ = 40; const passWheels = [];
+
+/* ───────────── people ───────────── */
+const people = [];
+async function buildPeople() {
+  const files = ['character-female-a', 'character-male-a', 'character-female-c', 'character-male-c', 'character-female-e', 'character-male-e'];
+  const gs = await Promise.all(files.map(f => load(`people/${f}.glb`)));
+  for (let i = 0; i < 10; i++) {
+    const g = gs[i % gs.length];
+    const p = SkeletonUtils.clone(g.scene);
+    const s = 1.6 / sizeOf(g.scene).y;
+    p.scale.setScalar(s * (.94 + (i % 4) * .03));
+    p.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+    const mixer = new THREE.AnimationMixer(p);
+    const clip = g.animations.find(a => a.name === 'walk') || g.animations[0];
+    const act = mixer.clipAction(clip); act.play(); act.time = i * .31;
+    const wrap = new THREE.Group(); wrap.add(p);
+    const side = i % 3 === 0 ? -1 : 1;
+    wrap.userData = {x: side < 0 ? -(RW + 3.2) : RW + 1.8 + (i % 3) * .8, dir: i % 2 ? 1 : -1, speed: 1.2 + (i % 4) * .08, off: -6 - i * 8, mixer};
+    wrap.visible = false; scene.add(wrap); people.push(wrap);
+  }
+}
+
+/* ───────────── camera rig ───────────── */
+const camera = new THREE.PerspectiveCamera(70, 1, .05, 800);
+const rig = new THREE.Group(); rig.add(camera); scene.add(rig);
+let yawUser = 0, pitchUser = 0, yawAuto = 0;
+{
+  let drag = null;
+  stage.addEventListener('pointerdown', e => { if (e.target.closest('.start,.logo,.loading,.go-btn,.report')) return; drag = {x:e.clientX, y:e.clientY, yaw:yawUser, pitch:pitchUser}; stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener('pointermove', e => { if (!drag) return; yawUser = drag.yaw + (e.clientX - drag.x) * .004; pitchUser = Math.max(-.6, Math.min(.6, drag.pitch + (e.clientY - drag.y) * .003)); });
+  const end = () => drag = null; stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
+}
+/* the car you drive: a low-poly jeep with its interior drawn ("Car" by jeremy, CC-BY 3.0, Poly Pizza).
+   It moves with you, not with your head, and is placed so your eyes sit in the driver's seat. */
+const cabin = new THREE.Group(); rig.add(cabin); cabin.visible = false;
+const JEEP = {len: 4.0, eye: new THREE.Vector3(-8, 150, 36), eyeY: 1.6};   // driver's eye in model units: headlights at −x, wheel on +z
+async function buildCabin() {
+  const m = (await load('cars/jeep.glb')).scene;
+  const size = sizeOf(m), k = JEEP.len / size.x;              // the model's length runs along x
+  m.scale.setScalar(k);
+  m.rotation.y = -Math.PI / 2;                                 // its nose (−x, the yellow headlights) to −z, the way you drive
+  m.traverse(o => { if (o.isMesh) { o.material.side = THREE.DoubleSide; o.receiveShadow = true; } });
+  const eye = JEEP.eye.clone().multiplyScalar(k).applyEuler(m.rotation);
+  JEEP.eyeY = eye.y;                                           // in the car your eyes are where the seat puts them
+  m.position.copy(eye).negate();                               // the driver's eye lands on the camera
+  cabin.add(m);
+}
+/* comfort aids inside a headset: the CSS overlays do not reach a VR display, so in XR they are drawn in 3D.
+   Vignette and nose ride on your head; the horizon ring rides on your body, so it stays put when you look around. */
+const xrAids = {};
+{
+  const vig = new THREE.Mesh(new THREE.RingGeometry(.1, 1.2, 64, 1), new THREE.ShaderMaterial({
+    transparent: true, depthTest: false, depthWrite: false, uniforms: {op: {value: 0}},
+    vertexShader: 'varying vec2 p; void main(){ p = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+    fragmentShader: 'uniform float op; varying vec2 p; void main(){ float r = length(p); gl_FragColor = vec4(vec3(.03), op * smoothstep(.14, .32, r)); }'}));
+  vig.position.z = -.3; vig.renderOrder = 999; vig.visible = false; camera.add(vig); xrAids.vig = vig;
+  const noseM = new THREE.MeshBasicMaterial({color: '#c99a7c', transparent: true, opacity: .8, depthTest: false});
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(.018, .06, 12), noseM);
+  nose.position.set(0, -.045, -.11); nose.rotation.x = -1.1; nose.renderOrder = 998; nose.visible = false; camera.add(nose); xrAids.nose = nose;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(3, .006, 6, 160), new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: .8}));
+  ring.rotation.x = Math.PI / 2; ring.visible = false; rig.add(ring); xrAids.ring = ring;
+}
+function resize() {
+  const r = stage.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+  sizeStrip();
+}
+addEventListener('resize', resize);
+
+/* ───────────── audio ───────────── */
+let A = null;
+function noiseBuffer(ctx, sec, brown) {
+  const b = ctx.createBuffer(1, ctx.sampleRate * sec, ctx.sampleRate), d = b.getChannelData(0); let last = 0;
+  for (let i = 0; i < d.length; i++) { const w = Math.random()*2 - 1; if (brown) { last = (last + .02*w) / 1.02; d[i] = last * 3.5; } else d[i] = w; }
+  return b;
+}
+function loop(ctx, buf) { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.start(); return s; }
+function startAudio() {
+  if (A) return;
+  const ctx = new AudioContext();
+  // iOS suspends audio on calls and app switches: wake it on return and on the next tap
+  const wake = () => { if (ctx.state !== 'running') ctx.resume(); };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
+  addEventListener('pointerdown', wake);
+  const master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+  const sceneG = ctx.createGain(); sceneG.connect(master);
+  const brown = noiseBuffer(ctx, 4, true), white = noiseBuffer(ctx, 3, false);
+  // city bed
+  const city = ctx.createGain(); city.connect(sceneG);
+  const c1 = loop(ctx, brown), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; c1.connect(lp); lp.connect(city);
+  const c2 = loop(ctx, white), bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = .6;
+  const c2g = ctx.createGain(); c2g.gain.value = .05; c2.connect(bp); bp.connect(c2g); c2g.connect(city);
+  // beach bed (the wrong scene)
+  const sea = ctx.createGain(); sea.gain.value = 0; sea.connect(sceneG);
+  const s1 = loop(ctx, white), slp = ctx.createBiquadFilter(); slp.type = 'lowpass'; slp.frequency.value = 700;
+  const swell = ctx.createGain(); swell.gain.value = .25; const lfo = ctx.createOscillator(); lfo.frequency.value = .09; const lfoG = ctx.createGain(); lfoG.gain.value = .22;
+  lfo.connect(lfoG); lfoG.connect(swell.gain); lfo.start(); s1.connect(slp); slp.connect(swell); swell.connect(sea);
+  // engines, placed in 3D: one idling (the reversing car), one at speed (the passing car)
+  const makeEngine = (f1, f2, level) => {
+    const panner = new PannerNode(ctx, {panningModel:'HRTF', distanceModel:'inverse', refDistance:2, maxDistance:80, rolloffFactor:1.2});
+    const gain = ctx.createGain(); gain.gain.value = 0; gain.connect(panner); panner.connect(sceneG);
+    const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = f1;
+    const o2 = ctx.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = f2; o2.detune.value = 9;
+    const elp = ctx.createBiquadFilter(); elp.type = 'lowpass'; elp.frequency.value = 260;
+    const og = ctx.createGain(); og.gain.value = .5; o1.connect(og); o2.connect(og); og.connect(elp); elp.connect(gain);
+    const rum = loop(ctx, brown), rg = ctx.createGain(); rg.gain.value = .6; rum.connect(rg); rg.connect(gain);
+    o1.start(); o2.start();
+    return {panner, gain, level, last: -1};
+  };
+  const engines = [makeEngine(44, 89, .35), makeEngine(78, 157, .55)];
+  const bang = ctx.createGain(); bang.connect(master);
+  // pleasant music: a slow, soft chord loop (C, A minor, F, G), generated here
+  const music = ctx.createGain(); music.gain.value = 0; music.connect(sceneG);
+  const mlp = ctx.createBiquadFilter(); mlp.type = 'lowpass'; mlp.frequency.value = 1800; mlp.connect(music);
+  const CHORDS = [[261.6, 329.6, 392.0], [220.0, 261.6, 329.6], [174.6, 220.0, 261.6], [196.0, 246.9, 293.7]];
+  let ci = 0;
+  const playChord = () => {
+    const t = ctx.currentTime;
+    for (const f of CHORDS[ci % 4]) for (const mul of [1, 2]) {
+      const o = ctx.createOscillator(); o.type = mul === 1 ? 'triangle' : 'sine'; o.frequency.value = f * mul / 2;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(mul === 1 ? .09 : .04, t + .8); g.gain.linearRampToValueAtTime(0, t + 3.9);
+      o.connect(g); g.connect(mlp); o.start(t); o.stop(t + 4);
+    }
+    ci++;
+  };
+  playChord(); setInterval(() => { if (A && S.sound === 'music') playChord(); }, 3600);
+  A = {ctx, sceneG, city, sea, engines, bang, white, music, nextBang: 0};
+  applyAudio();
+}
+function applyAudio() {
+  if (!A) return;
+  const t = A.ctx.currentTime, set = (p, v) => p.setTargetAtTime(v, t, .15);
+  set(A.sceneG.gain, S.sound === 'none' ? 0 : 1);
+  set(A.city.gain, S.sound === 'off' ? 0 : .55);
+  set(A.sea.gain, S.sound === 'off' ? .9 : 0);
+  set(A.music.gain, S.sound === 'music' ? .8 : 0);
+}
+function fireBang() {
+  const {ctx, white} = A, t = ctx.currentTime;
+  const n = ctx.createBufferSource(); n.buffer = white;
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 600;
+  const g = ctx.createGain(); g.gain.setValueAtTime(1.1, t); g.gain.exponentialRampToValueAtTime(.001, t + .5);
+  n.connect(hp); hp.connect(g); g.connect(A.bang); n.start(t); n.stop(t + .55);
+  const th = ctx.createOscillator(); th.frequency.setValueAtTime(110, t); th.frequency.exponentialRampToValueAtTime(40, t + .4);
+  const tg = ctx.createGain(); tg.gain.setValueAtTime(1.2, t); tg.gain.exponentialRampToValueAtTime(.001, t + .45);
+  th.connect(tg); tg.connect(A.bang); th.start(t); th.stop(t + .5);
+  if (Math.random() < .5) for (const f of [415, 523]) {         // a car horn
+    const h = ctx.createOscillator(); h.type = 'square'; h.frequency.value = f;
+    const hg = ctx.createGain(); hg.gain.setValueAtTime(.0001, t + .05); hg.gain.exponentialRampToValueAtTime(.18, t + .08); hg.gain.setValueAtTime(.18, t + .6); hg.gain.exponentialRampToValueAtTime(.0001, t + .7);
+    h.connect(hg); hg.connect(A.bang); h.start(t + .05); h.stop(t + .75);
+  }
+}
+
+/* ───────────── strip chart (ECG paper) ───────────── */
+const strip = document.getElementById('strip'), sx = strip.getContext('2d');
+const SAMPLES = 360, hist = new Float32Array(SAMPLES), you = new Float32Array(SAMPLES).fill(-1); let histAt = 0;
+function sizeStrip() { const r = strip.getBoundingClientRect(); strip.width = r.width * devicePixelRatio; strip.height = r.height * devicePixelRatio; }
+function drawStrip() {
+  const W = strip.width, H = strip.height, d = devicePixelRatio;
+  sx.clearRect(0, 0, W, H);
+  const small = W / 90;                                   // one small square = 1 s
+  sx.lineWidth = 1;
+  for (let i = 0, x = 0; x <= W; i++, x = i*small) { sx.strokeStyle = i % 5 ? '#f6dccf' : '#ecb79d'; sx.beginPath(); sx.moveTo(x, 0); sx.lineTo(x, H); sx.stroke(); }
+  for (let i = 0, y = H; y >= 0; i++, y = H - i*H/20) { sx.strokeStyle = i % 5 ? '#f6dccf' : '#ecb79d'; sx.beginPath(); sx.moveTo(0, y); sx.lineTo(W, y); sx.stroke(); }
+  // events
+  sx.font = `${10*d}px "IBM Plex Mono", monospace`; sx.fillStyle = '#5b5d56';
+  for (const e of events) {
+    const age = clock - e.t; if (age > 90) continue;
+    const x = W - age / 90 * W;
+    sx.strokeStyle = '#151613'; sx.setLineDash([3*d, 3*d]); sx.beginPath(); sx.moveTo(x, 0); sx.lineTo(x, H); sx.stroke(); sx.setLineDash([]);
+    sx.fillText(e.code, x + 3*d, 11*d);
+  }
+  // trace
+  sx.strokeStyle = '#151613'; sx.lineWidth = 2*d; sx.lineJoin = 'round'; sx.beginPath();
+  for (let i = 0; i < SAMPLES; i++) {
+    const v = hist[(histAt + i) % SAMPLES], x = i / (SAMPLES - 1) * W, y = H - v / 100 * H;
+    i ? sx.lineTo(x, y) : sx.moveTo(x, y);
+  }
+  sx.stroke();
+  // your own ratings (MISC 0–10, drawn ×10 on the same axis), as a stepped orange line
+  sx.strokeStyle = '#e2581a'; sx.lineWidth = 2*d; sx.beginPath(); let pen = false;
+  for (let i = 0; i < SAMPLES; i++) {
+    const r = you[(histAt + i) % SAMPLES]; if (r < 0) { pen = false; continue; }
+    const x = i / (SAMPLES - 1) * W, y = H - r * 10 / 100 * H;
+    pen ? sx.lineTo(x, y) : sx.moveTo(x, y); pen = true;
+  }
+  sx.stroke();
+  const last = hist[(histAt + SAMPLES - 1) % SAMPLES];
+  sx.fillStyle = '#e2581a'; sx.beginPath(); sx.arc(W - 3*d, H - last/100*H, 4*d, 0, Math.PI*2); sx.fill();
+}
+
+
+/* ───────────── loop ───────────── */
+const $ = id => document.getElementById(id);
+let clock = 0, last = performance.now(), lastRender = 0, frames = 0, fpsT = 0, index = 0, sampleT = 0, travel = 0;
+let carZ = -55, ready = false, snapT = 0, radarT = 0;
+const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3();
+const radarVisible = () => $('a-marks').closest('.gauge').offsetParent !== null;
+const lagHist = [];
+// "you" control: you move only while holding ↑ / W or the on-screen button (Stanney & Hash, 1998)
+let goHeld = false, goAmt = 0;
+const isGoKey = e => e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W';
+addEventListener('keydown', e => {
+  if (!isGoKey(e) || (e.target.closest && e.target.closest('input,select,textarea,summary,a,.sheet,.report'))) return;   // keys in the sheet keep their normal job
+  goHeld = true; if (e.key === 'ArrowUp') e.preventDefault();
+});
+addEventListener('keyup', e => { if (isGoKey(e)) goHeld = false; });
+addEventListener('blur', () => goHeld = false);
+// in a headset, either controller's trigger does the same
+renderer.xr.addEventListener('sessionstart', () => sheetUpdate());
+renderer.xr.addEventListener('sessionend', () => { camera.position.set(0, 0, 0); camera.quaternion.identity(); sheetUpdate(); });
+for (const i of [0, 1]) { const c = renderer.xr.getController(i); c.addEventListener('selectstart', () => goHeld = true); c.addEventListener('selectend', () => goHeld = false); scene.add(c); }
+function camSpeed(t) {
+  const base = {still:0, walk:1.4, drive:11, yaw:0, snap:0}[S.camera] * (S.control === 'you' ? goAmt : 1);
+  return S.accel === 'some' ? base * (.55 + .45*Math.sin(t*.55)) * (Math.sin(t*.55) > .85 ? .6 : 1) : base;
+}
+// adaptive quality: when the street cannot hold ~50 fps, step down, one notch at a time
+let slowFor = 0, quality = 0;
+function adapt(fps) {
+  if (!ready || S.fps !== 'native' || renderer.xr.isPresenting || document.hidden) { slowFor = 0; return; }
+  slowFor = fps < 48 ? slowFor + .25 : 0;
+  if (slowFor < 2 || quality >= 3) return;
+  slowFor = 0; quality++;
+  if (quality === 1) { pixelRatio = Math.min(pixelRatio, 1.25); renderer.setPixelRatio(pixelRatio); resize(); }
+  if (quality === 2) { renderer.shadowMap.enabled = false; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
+  if (quality === 3) { pixelRatio = 1; renderer.setPixelRatio(1); resize(); }
+}
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now; clock += dt;
+  const xr = renderer.xr.isPresenting;
+
+  // you
+  goAmt += ((goHeld ? 1 : 0) - goAmt) * (1 - Math.exp(-dt / .35));   // ease in and out, like a real start and stop
+  const v = camSpeed(clock); travel += v * dt;
+  if (travel > L) {                                  // the street repeats every L: shift everything that moves on its own with it
+    travel -= L; carZ += L; passZ += L;
+    for (const p of people) if (p.userData.z !== undefined) p.userData.z += L;
+  }
+  const camX = S.camera === 'drive' ? 1.65 : -(RW + 1.9);   // pavement: near lane on your right. Driving: the jeep sits in the middle of the right lane
+  const driving = S.camera === 'drive';
+  let eye = driving && S.cabin === 'yes' ? JEEP.eyeY : parseFloat(S.cam);   // in the car, the seat sets your eye height
+  for (const m of parkedMeshes) m.visible = !driving;
+  const bob = S.camera === 'walk' && S.bob === 'yes';
+  if (bob) eye += Math.sin(clock * 2 * Math.PI * 1.85) * .035 * (v / 1.4);
+  const swayOn = S.sway === 'yes', w02 = 2 * Math.PI * .2 * clock;          // 0.2 Hz
+  if (swayOn) eye += Math.sin(w02 + 1) * .07;
+  const turnAmt = S.control === 'you' ? goAmt : 1;
+  if (S.camera === 'yaw') yawAuto += dt * THREE.MathUtils.degToRad(18) * turnAmt;
+  if (S.camera === 'snap') {                                        // same average rate, in 22.5° jumps (Farmani & Teather, 2020)
+    snapT += dt * turnAmt;
+    if (snapT >= 1.25) { snapT -= 1.25; yawAuto += THREE.MathUtils.degToRad(22.5); }
+  }
+  $('go-btn').hidden = !(S.control === 'you' && S.camera !== 'still' && started);
+  rig.position.set(camX, xr ? eye - EYE[S.posture] : eye, -travel);   // in a headset your real head already sits at your eye height
+  const camZ = rig.position.z;
+  // head-tracking delay: the view uses where your "head" (the mouse) was a moment ago
+  lagHist.push({t: clock, yaw: yawUser, pitch: pitchUser});
+  while (lagHist.length > 2 && lagHist[1].t <= clock - .4) lagHist.shift();
+  const lagS = parseInt(S.lag) / 1000; let look = lagHist[lagHist.length - 1];
+  if (lagS > 0) for (let i = lagHist.length - 1; i >= 0; i--) if (lagHist[i].t <= clock - lagS) { look = lagHist[i]; break; }
+  const roll = (swayOn ? Math.sin(w02) * .055 : 0) + (bob ? Math.sin(clock*Math.PI*1.85) * .008 : 0);   // a step left, a step right
+  if (!xr) { camera.rotation.order = 'YXZ'; camera.rotation.set(look.pitch, look.yaw + yawAuto, roll); }
+  else rig.rotation.y = yawAuto;
+  if (!xr) rig.rotation.y = 0;
+  updatePeriodic(camZ);
+
+  // a car reversing beside you, at walking pace
+  movingCar.visible = !!carModel && has('rev');
+  if (has('rev')) {
+    carZ += 1.25 * dt;                                   // 4.5 km/h, backwards
+    if (carZ - camZ > 20 || carZ - camZ < -70) carZ = camZ - 55;   // reappears beyond the fog, not in plain view
+    for (const w of carWheels) w.rotation.x -= 1.25 * dt / .34;   // rolling backwards
+  }
+  movingCar.position.set(S.camera === 'drive' ? -3.3 : -2.1, 0, carZ);   // while you drive it reverses along the far kerb, clear of oncoming traffic
+  if (movingCar.userData.revLight) movingCar.userData.revLight.intensity = has('rev') ? 2.5 : 0;
+  // a car passing at 30 km/h; while you drive it comes the other way
+  passCar.visible = !!passModel && has('pass');
+  if (has('pass')) {
+    const onc = S.camera === 'drive' ? 1 : -1;
+    passZ += onc * 8.3 * dt;
+    if (passZ - camZ < -90 || passZ - camZ > 45) passZ = onc > 0 ? camZ - 85 : camZ + 40;
+    passCar.rotation.y = onc > 0 ? Math.PI : 0;
+    passCar.position.set(onc > 0 ? -1.4 : 1.1, 0, passZ);
+    for (const w of passWheels) w.rotation.x += 8.3 * dt / .34;   // rolling forwards
+  }
+  const audCar = has('rev') ? movingCar : has('pass') ? passCar : null;
+
+  // people
+  const showP = has('peds');
+  for (const p of people) {
+    p.visible = showP;
+    if (!showP) continue;
+    // people walk in the world at their own pace; you move past them, they do not move with you
+    const u = p.userData;
+    if (u.z === undefined) u.z = camZ + u.off;
+    u.z += u.dir * -u.speed * dt;
+    let rel = u.z - camZ;
+    while (rel > 20) { u.z -= 90; rel -= 90; }       // left behind: reappear ahead
+    while (rel < -70) { u.z += 90; rel += 90; }
+    p.position.set(u.x, .15, u.z); p.rotation.y = u.dir > 0 ? Math.PI : 0;
+    u.mixer.update(dt * u.speed / 1.2);
+  }
+
+  // the sun's shadow box follows you
+  sun.position.copy(sunDir).multiplyScalar(90).add(tmpV2.set(camX, 0, camZ - 15));
+  scene.userData.dome.position.set(camX, 0, camZ);
+  sun.target.position.set(camX, 0, camZ - 15);
+
+  // vignette: only while moving, stronger with more motion
+  const yawSpeed = S.camera === 'yaw' ? 18 * turnAmt : 0;
+  const motion = Math.min(1, v / 6 + yawSpeed / 25 + (has('rev') ? .35 : 0) + (swayOn ? .3 : 0));
+  const vigOp = S.fov === 'vig' && motion > .02 ? (.3 + .7 * motion).toFixed(2) : '0';   // opens fully when nothing moves
+  if ($('vig').style.opacity !== vigOp) $('vig').style.opacity = vigOp;
+  $('rest').hidden = S.rest !== 'yes';
+  $('nose').hidden = S.nose !== 'yes';
+  xrAids.vig.visible = xr && S.fov === 'vig'; xrAids.vig.material.uniforms.op.value = +vigOp;
+  xrAids.nose.visible = xr && S.nose === 'yes';
+  xrAids.ring.visible = xr && S.rest === 'yes'; xrAids.ring.position.y = EYE[S.posture];   // your eye height in the headset's floor space
+  cabin.visible = S.camera === 'drive' && S.cabin === 'yes';
+  cabin.position.y = xr ? EYE[S.posture] : 0;      // in a headset your head is above the rig origin
+
+  // audio: each moving car has its own engine, placed where you see it (or mirrored)
+  rig.updateMatrixWorld(true);
+  if (A) {
+    const t = A.ctx.currentTime;
+    for (const [car, e, on] of [[movingCar, A.engines[0], has('rev')], [passCar, A.engines[1], has('pass')]]) {
+      car.getWorldPosition(tmpV); tmpV.y = .6; camera.worldToLocal(tmpV);
+      const mx = S.sound === 'flip' ? -tmpV.x : tmpV.x;
+      e.panner.positionX.setTargetAtTime(mx, t, .03); e.panner.positionY.setTargetAtTime(tmpV.y, t, .03); e.panner.positionZ.setTargetAtTime(tmpV.z, t, .03);
+      const g = on && S.sound !== 'off' ? e.level : 0;
+      if (e.last !== g) { e.gain.gain.setTargetAtTime(g, t, .1); e.last = g; }
+    }
+    if (S.loud === 'yes' && clock > A.nextBang) { if (A.nextBang) fireBang(); A.nextBang = clock + 6 + Math.random()*5; }
+    if (S.loud !== 'yes') A.nextBang = 0;
+  }
+  radarT += dt;
+  if (radarT > .08 && radarVisible()) { radarT = 0; gaugeRadar(audCar, camX, look.yaw + yawAuto); }   // ~12 Hz is plenty for a gauge
+
+  // the index climbs toward its target over time
+  target = Math.round(Math.min(100, baseTarget * exposureFactor()));
+  const tau = 3;                                   // up and down at the same pace: recovery mirrors build-up (Bos et al., 2005)              // seconds: quick enough to see each change land
+  index += (target - index) * (1 - Math.exp(-dt / tau));
+  sampleT += dt;
+  while (sampleT >= .25) { sampleT -= .25; hist[histAt] = index; you[histAt] = misc; histAt = (histAt + 1) % SAMPLES; }
+
+  // frame-rate condition: skip renders (not in a headset, where every frame must be submitted)
+  const minGap = S.fps === 'native' || xr ? 0 : 1000 / parseInt(S.fps) - 1;
+  if (ready && now - lastRender >= minGap) {
+    renderer.render(scene, camera);
+    lastRender = now; frames++;
+  }
+
+  fpsT += dt;
+  if (fpsT > .25) {
+    const fps = frames / fpsT;
+    $('o-fps').textContent = Math.round(fps); frames = 0; fpsT = 0;
+    adapt(fps);
+    $('o-speed').textContent = (v * 3.6).toFixed(1);
+    if (started && clock - lastLog >= 1) { lastLog = clock; sessionLog.push({t: clock - startedAt, est: Math.round(index), misc, k: contributions(), S: JSON.parse(JSON.stringify(S))}); }
+    if (started) { const sec = Math.floor(clock - startedAt); $('o-time').textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
+    $('o-eye').textContent = camHeight().toFixed(2);
+    const n = Math.round(index); $('rd-num').textContent = n;
+    const word = n < 20 ? 'Settled' : n < 40 ? 'Uneasy' : n < 65 ? 'Queasy' : 'Sick';
+    const w = $('rd-word'); w.textContent = word; w.style.color = n < 20 ? 'var(--ink)' : n < 40 ? 'var(--warn)' : n < 65 ? 'var(--signal)' : 'var(--bad)';
+    $('rd-target').textContent = 'heading to ' + Math.round(target);
+    gaugeHeight();
+    drawStrip();
+  }
+}
+
+
+const camHeight = () => S.camera === 'drive' && S.cabin === 'yes' ? JEEP.eyeY : parseFloat(S.cam);
+function gaugeHeight() {
+  const you = S.camera === 'drive' && S.cabin === 'yes' ? camHeight() : EYE[S.posture], cam = camHeight();   // in the car you sit where the camera is
+  const y = m => 88 - m * 36;                               // 36 px per metre
+  $('fig-seated').style.display = S.posture === 'seated' ? '' : 'none';
+  $('fig-standing').style.display = S.posture === 'seated' ? 'none' : '';
+  $('eye-line').setAttribute('y1', y(you)); $('eye-line').setAttribute('y2', y(you));
+  $('cam-mark').setAttribute('transform', `translate(96 ${y(cam)})`);
+  $('o-you').textContent = you.toFixed(2); $('o-cam').textContent = cam.toFixed(2);
+  const d = cam - you; $('o-delta').textContent = (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(2);
+}
+// the radar: a top-down view that turns with you. The street, the car you see, and where you hear it.
+function gaugeRadar(car, camX, yaw) {
+  const k = 34 / 18;                                   // pixels per metre: the ring is 18 m
+  const sx = x => 56 + (x - camX) * k;
+  $('a-road').setAttribute('x', sx(-RW)); $('a-road').setAttribute('width', 2 * RW * k);
+  for (const [id, x] of [['a-kerb-l', -RW], ['a-kerb-r', RW], ['a-centre', 0]]) { $(id).setAttribute('x1', sx(x)); $(id).setAttribute('x2', sx(x)); }
+  $('a-street').setAttribute('transform', `rotate(${(yaw * 180 / Math.PI).toFixed(1)} 56 56)`);
+  // everything around you: cars as boxes along the street, people as dots
+  const deg = (yaw * 180 / Math.PI).toFixed(1), v = new THREE.Vector3();
+  const toRadar = (x, z) => { v.set(x, 1, z); camera.worldToLocal(v); return [56 + v.x * k, 56 + v.z * k]; };
+  let html = '';
+  const box = (x, z) => { const [px, pz] = toRadar(x, z); if (Math.hypot(px - 56, pz - 56) < 40) html += `<rect x="${(px - 1.8).toFixed(1)}" y="${(pz - 4.2).toFixed(1)}" width="3.6" height="8.4" fill="#151613" transform="rotate(${deg} ${px.toFixed(1)} ${pz.toFixed(1)})"></rect>`; };
+  const dot = (x, z) => { const [px, pz] = toRadar(x, z); if (Math.hypot(px - 56, pz - 56) < 38) html += `<circle cx="${px.toFixed(1)}" cy="${pz.toFixed(1)}" r="1.7" fill="#151613"></circle>`; };
+  const camZ = rig.position.z;
+  if (S.camera !== 'drive') for (const sp of parkedSpots) box(sp.x, wrapZ(sp.z, camZ));
+  if (movingCar.visible) box(movingCar.position.x, movingCar.position.z);
+  if (passCar.visible) box(passCar.position.x, passCar.position.z);
+  for (const pp of people) if (pp.visible) dot(pp.position.x, pp.position.z);
+  $('a-marks').innerHTML = html;
+  const hear = $('a-hear');
+  if (!car) { hear.style.display = 'none'; $('o-snd').textContent = {match:'IN SYNC', music:'MUSIC', none:'SILENT', off:'WRONG SCENE', flip:'MIRRORED'}[S.sound]; return; }
+  const p = new THREE.Vector3(); car.getWorldPosition(p); camera.worldToLocal(p);
+  const mx = S.sound === 'flip' ? -p.x : p.x;
+  const r = Math.hypot(mx, p.z), sc = r > 18 ? 18 / r : 1;    // pin the sound to the ring when it is far
+  hear.setAttribute('cx', 56 + mx * k * sc); hear.setAttribute('cy', 56 + p.z * k * sc);
+  hear.style.display = A && (S.sound === 'match' || S.sound === 'flip') ? '' : 'none';
+  $('o-snd').textContent = {match:'IN SYNC', music:'MUSIC', none:'SILENT', off:'WRONG SCENE', flip:'MIRRORED'}[S.sound];
+}
+
+/* ───────────── loading, start, VR ───────────── */
+setTimeout(() => { if (!ready) $('ld-txt').textContent += ' · still loading: a slow connection?'; }, 25000);
+manager.onProgress = (url, done, total) => { const p = Math.round(done / total * 100); $('ld-bar').style.width = p + '%'; $('ld-txt').textContent = 'Loading ' + p + '%'; };
+Promise.all([buildCity(), buildCar(), buildPeople(), buildCabin()]).then(() => {
+  updatePeriodic(rig.position.z, true);
+  ready = true; $('loading').hidden = true; $('go').disabled = false;
+}).catch(err => { console.error(err); $('ld-txt').textContent = 'Could not load the street: ' + (err.message || err) + '. Reload to try again.'; });
+let started = false, startedAt = 0, lastLog = 0;
+// sessions on this device: people adapt over repeated sessions (Kennedy, Stanney & Dunlap, 2000)
+let sessionNo = 1;
+try { sessionNo = (+localStorage.getItem('qs-sessions') || 0) + 1; } catch (e) {}
+const sessionLog = [];
+function begin() { if (!ready) return; try { localStorage.setItem('qs-sessions', String(sessionNo)); } catch (e) {} startAudio(); $('start').hidden = true; started = true; startedAt = clock; $('pre-zero').focus({preventScroll: true}); }
+$('go').addEventListener('click', begin);
+// the whole scene is blocked until you start: a click outside the card starts too
+$('start').addEventListener('click', e => { if (!e.target.closest('.card')) begin(); });
+if (navigator.xr && navigator.xr.isSessionSupported) navigator.xr.isSessionSupported('immersive-vr').then(ok => { $('go-vr').hidden = !ok; }).catch(() => {});
+$('go-vr').addEventListener('click', async () => {
+  if (!ready) return;
+  try {
+    startAudio();
+    const s = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor']});
+    renderer.xr.setReferenceSpaceType('local-floor'); await renderer.xr.setSession(s); $('start').hidden = true; started = true; startedAt = clock;
+  } catch (e) { $('go-vr').textContent = 'VR unavailable here'; }
+});
+
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) $('rm-note').hidden = false;
+{ const g = $('go-btn'); const on = e => { e.preventDefault(); goHeld = true; }, off = () => goHeld = false;
+  g.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); goHeld = true; } });
+  g.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') goHeld = false; });
+  g.addEventListener('pointerdown', on); g.addEventListener('pointerup', off); g.addEventListener('pointerleave', off); g.addEventListener('pointercancel', off); }
+// sources list
+$('refs-list').innerHTML = Object.values(REFS).sort((a, b) => a[0].localeCompare(b[0]))
+  .map(([t, u]) => `<li>${t}${u ? ` <a href="${u}" target="_blank" rel="noopener">${u.replace('https://', '')}</a>` : ''}</li>`).join('');
+document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a.to-refs'); if (a) { e.preventDefault(); $('refs').open = true; $('refs').scrollIntoView({behavior: 'smooth', block: 'start'}); } });
+// MSSQ-short form
+{
+  const opts = '<option value="">—</option><option value="na">Never travelled</option><option value="0">Never sick</option><option value="1">Rarely</option><option value="2">Sometimes</option><option value="3">Frequently</option>';
+  let html = '<span class="h">Travel</span><span class="h">Before 12</span><span class="h">Last 10 years</span>';
+  MSSQ_ITEMS.forEach((it, i) => { html += `<label for="ms-a-${i}">${it}</label><select id="ms-a-${i}" data-p="a" data-i="${i}" aria-label="${it}, before age 12">${opts}</select><select id="ms-b-${i}" data-p="b" data-i="${i}" aria-label="${it}, last 10 years">${opts}</select>`; });
+  $('mssq').innerHTML = html;
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('qs-mssq') || 'null'); } catch (e) { return null; } })();
+  if (saved && saved.a && saved.b) { mssq.a = saved.a; mssq.b = saved.b; }
+  $('mssq').querySelectorAll('select').forEach(sel => {
+    const v = mssq[sel.dataset.p][+sel.dataset.i]; if (v !== null) sel.value = String(v);
+    sel.addEventListener('change', () => {
+      const raw = sel.value; mssq[sel.dataset.p][+sel.dataset.i] = raw === '' ? null : raw === 'na' ? 'na' : +raw;
+      try { localStorage.setItem('qs-mssq', JSON.stringify(mssq)); } catch (e) {}
+      profileSay(); sheetUpdate();
+    });
+  });
+}
+function profileSay() {
+  const r = mssqScore();
+  $('pf-say').textContent = r === null ? 'Answer all 18 to personalise the index.'
+    : `Your score is ${r.toFixed(1)} out of 54: more susceptible than about ${Math.round(mssqPercentile(r))}% of people in Golding's sample (median 11.3). The index is scaled ×${profileFactor().toFixed(2)}.`;
+}
+profileSay();
+/* the report: what peaked, what was on at the time, and evidence-based tips for real VR */
+const TIPS = {
+  turn:   ['Choose snap turning over smooth turning when an app offers it. It cut sickness scores by about 40%.', 'farmani2020'],
+  control:['Prefer experiences where you control the movement yourself, rather than being carried along.', 'stanney1998'],
+  vig:    ['Switch on the comfort vignette or "tunnelling" option if the app has one. Most people do not even notice it.', 'fernandes2016'],
+  frame:  ['Keep something fixed in view, like a cockpit or a horizon. Apps with a stable frame are easier on the stomach.', 'cao2018'],
+  speed:  ['Move slowly at first. Sickness comes sooner as speed rises, up to about 10 m/s.', 'so2001'],
+  vection:['If a large object moving past makes you feel you are moving, look at something fixed, like the ground or a building edge.', 'keshavarz2015'],
+  tech:   ['Make sure the headset runs smoothly at its full refresh rate, and close other apps. Delay and low frame rates both add sickness.', 'stauffert2020'],
+  sway:   ['Avoid slow rocking motion, like boats and swings, early on. Around one sway every five seconds is the worst.', 'golding2001'],
+  time:   ['Keep first sessions short and build up over days. Sickness grows with time in a session and falls across repeated sessions.', 'kennedy2000'],
+  music:  ['Try music you enjoy in the background. In one study it lowered sickness, but only when people found it pleasant.', 'keshavarz2014b'],
+  profile:['Your answers put you in the more susceptible group. Start with experiences where the camera stays still.', 'golding2021'],
+  stop:   ['Stop at the first sign of sickness rather than pushing through. Symptoms fade at about the pace they built up.', 'bos2005']
+};
+function openReport() {
+  const log = sessionLog.length ? sessionLog : [{t: 0, est: Math.round(index), misc, k: contributions(), S: JSON.parse(JSON.stringify(S))}];
+  const peakEst = log.reduce((a, b) => b.est > a.est ? b : a), rated = log.filter(l => l.misc >= 0);
+  const peakYou = rated.length ? rated.reduce((a, b) => b.misc > a.misc ? b : a) : null;
+  const at = peakYou && peakYou.misc > 0 ? peakYou : peakEst;
+  const total = Math.round(log.at(-1).t), mins = Math.floor(total / 60), secs = total % 60;
+  $('rp-stats').innerHTML = `<div><b>${mins}:${String(secs).padStart(2, '0')}</b><span>In the street</span></div><div><b>${peakEst.est}</b><span>Highest estimate</span></div><div><b>${peakYou ? peakYou.misc : '—'}</b><span>Your highest (MISC 0–10)</span></div>`;
+  const names = Object.fromEntries(C.map(c => [c.id, c.name]));
+  const top = Object.entries(at.k).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => names[id]);
+  $('rp-peak').textContent = top.length ? `${peakYou && peakYou.misc > 0 ? 'When you felt worst' : 'At the highest estimate'}, the biggest drivers were: ${top.join(', ')}.` : 'Nothing pushed the index up. Try changing a few conditions first.';
+  // pick tips from what was on during the session
+  const seen = k => log.some(l => (l.k[k] || 0) > 0), was = (key, val) => log.some(l => (Array.isArray(l.S[key]) ? l.S[key].includes(val) : l.S[key] === val));
+  const pick = [];
+  if (was('camera', 'yaw')) pick.push('turn');
+  if ((was('camera', 'walk') || was('camera', 'drive') || was('camera', 'yaw') || was('camera', 'snap')) && !was('control', 'you')) pick.push('control');
+  if (was('around', 'rev')) pick.push('vection');
+  if (seen('camera') && !was('fov', 'vig')) pick.push('vig');
+  if (seen('camera') && !was('rest', 'yes')) pick.push('frame');
+  if (was('camera', 'drive')) pick.push('speed');
+  if (seen('fps') || seen('lag')) pick.push('tech');
+  if (seen('sway')) pick.push('sway');
+  if (profileFactor() > 1.1) pick.push('profile');
+  if (!was('sound', 'music')) pick.push('music');
+  pick.push('time', 'stop');
+  $('rp-tips').innerHTML = [...new Set(pick)].slice(0, 6).map(id => { const [t, key] = TIPS[id], r = REFS[key];
+    return `<li>${t}<cite>${r[1] ? `<a href="${r[1]}" target="_blank" rel="noopener">${shortRef(r[0])}</a>` : shortRef(r[0])}</cite></li>`; }).join('');
+  $('rp-peak').textContent += sessionNo > 1 ? ` This is your session ${sessionNo} on this device. Most people get less sick with each repeated session, so if this felt better than last time, that is adaptation at work.` : ' Come back another day: most people get less sick with each repeated session.';
+  $('report').hidden = false; $('rp-close').focus();
+}
+$('pre-end').addEventListener('click', openReport);
+$('rp-close').addEventListener('click', () => closeReport());
+function closeReport() { $('report').hidden = true; $('pre-end').focus(); }
+$('rp-reset').addEventListener('click', () => {
+  applyPreset('zero'); sessionLog.length = 0; startedAt = clock; misc = -1;
+  document.querySelectorAll('#misc-row button').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  $('misc-say').textContent = 'Not rated yet. Your own answers are drawn on the chart next to the estimate.';
+  closeReport();
+});
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('report').hidden) closeReport(); });
+for (const n of ['zero', 'comfort', 'worst']) $('pre-' + n).addEventListener('click', () => applyPreset(n));
+sheetUpdate(); resize(); gaugeHeight();
+window.QS = {S, scene, camera, rig, renderer, sun, cabin, JEEP, set yaw(v) { yawUser = v; }, set pitch(v) { pitchUser = v; }};   // for debugging in the console
+for (let i = 0; i < SAMPLES; i++) hist[i] = target;
+index = hist[SAMPLES - 1];
+renderer.setAnimationLoop(frame);
+</script>
+</body>
+</html>
